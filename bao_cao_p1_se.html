@@ -79,8 +79,64 @@
 </head>
 <body class="min-h-full flex flex-col font-sans bg-slate-950 text-slate-100 antialiased custom-scrollbar">
 
-    <!-- Top Navigation Header -->
-    <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-50 backdrop-blur-md">
+    <!-- AUTHENTICATION OVERLAY MODAL -->
+    <div id="authOverlay" class="fixed inset-0 z-[99999] bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 sm:p-8 relative">
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 mb-3 shadow-lg">
+                    <i data-lucide="shield-check" class="w-8 h-8"></i>
+                </div>
+                <h2 class="text-xl font-bold text-white tracking-tight">HỆ THỐNG BÁO CÁO NỘI BỘ</h2>
+                <p class="text-xs text-slate-400 mt-1">Báo Cáo Hiệu Quả Lead & Doanh Thu P1-SE</p>
+                <div class="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Bảo mật xác thực & phân quyền truy cập
+                </div>
+            </div>
+
+            <form id="authLoginForm" onsubmit="handleAuthLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Tên Đăng Nhập</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 pointer-events-none">
+                            <i data-lucide="user" class="w-4 h-4"></i>
+                        </span>
+                        <input type="text" id="authUsernameInput" required autocomplete="username" placeholder="admin, mkt_p1..." class="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-slate-700/80 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Mật Khẩu</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 pointer-events-none">
+                            <i data-lucide="lock" class="w-4 h-4"></i>
+                        </span>
+                        <input type="password" id="authPasswordInput" required autocomplete="current-password" placeholder="Nhập mật khẩu..." class="w-full pl-9 pr-10 py-2.5 bg-slate-950 border border-slate-700/80 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all">
+                        <button type="button" onclick="togglePasswordVisibility()" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-200">
+                            <i data-lucide="eye" id="authEyeIcon" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="authErrorMessage" class="hidden text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg p-2.5 flex items-center gap-2">
+                    <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+                    <span id="authErrorText">Sai tên đăng nhập hoặc mật khẩu!</span>
+                </div>
+
+                <button type="submit" id="authLoginBtn" class="w-full py-2.5 px-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm rounded-xl shadow-lg shadow-emerald-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                    <i data-lucide="log-in" class="w-4 h-4"></i>
+                    <span>Đăng Nhập</span>
+                </button>
+            </form>
+
+            <div class="mt-6 pt-4 border-t border-slate-800 text-center text-[11px] text-slate-500">
+                Hệ thống chỉ dành cho nhân sự được phân quyền của TTKD FUNiX Way.
+            </div>
+        </div>
+    </div>
+
+    <div id="dashboardAppWrapper" style="display: none;">
+<header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-50 backdrop-blur-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center gap-3">
@@ -106,6 +162,19 @@
                         <i data-lucide="printer" class="w-3.5 h-3.5"></i> In Báo Cáo
                     </button>
                 </div>
+
+                    <!-- User Profile & Logout Badge -->
+                    <div id="authUserInfoBadge" class="hidden flex items-center gap-2.5 pl-3 border-l border-slate-800">
+                        <div class="text-right hidden sm:block">
+                            <div id="authUserDisplayName" class="text-xs font-bold text-slate-200">Tên người dùng</div>
+                            <div id="authUserRoleName" class="text-[10px] text-emerald-400 font-semibold">Vai trò</div>
+                        </div>
+                        <button onclick="handleAuthLogout()" class="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg border border-transparent hover:border-rose-500/20 transition-all flex items-center gap-1 text-xs" title="Đăng xuất khỏi hệ thống">
+                            <i data-lucide="log-out" class="w-4 h-4"></i>
+                            <span class="hidden md:inline text-xs font-semibold">Đăng xuất</span>
+                        </button>
+                    </div>
+
             </div>
         </div>
     </header>
@@ -358,6 +427,8 @@
             </div>
         </div>
     </footer>
+    </div>
+
 
     <!-- Embedded Application Dataset & Logic -->
     <script>
@@ -1415,10 +1486,144 @@
 
         // Initialize on load
         document.addEventListener('DOMContentLoaded', () => {
+            checkAuthSession();
+        });
+    
+        // ==========================================
+        // AUTHENTICATION & ACCESS CONTROL (P1 REPORT)
+        // ==========================================
+        const AUTH_USERS = {
+            admin: {
+                pass: "FunixAdmin@2026",
+                name: "Ban Lãnh Đạo (Admin)",
+                role: "Toàn quyền quản trị",
+                canViewP1: true
+            },
+            mkt_p1: {
+                pass: "MktP1@2026",
+                name: "Marketing Ads - Báo cáo P1-SE",
+                role: "Chuyên viên MKT",
+                canViewP1: true
+            },
+            trangbt1: {
+                pass: "TrangBT@2026",
+                name: "Phòng KD 1 - TrangBT1",
+                role: "Trưởng phòng KD 1",
+                canViewP1: true
+            },
+            giangltt: {
+                pass: "GiangLT@2026",
+                name: "Phòng KD 2 - GiangLTT",
+                role: "Trưởng phòng KD 2",
+                canViewP1: true
+            },
+            lannh1: {
+                pass: "LanNH@2026",
+                name: "Phòng KD 3 - LanNH1",
+                role: "Trưởng phòng KD 3",
+                canViewP1: true
+            }
+        };
+
+        let currentAuthUser = null;
+
+        function checkAuthSession() {
+            try {
+                const stored = sessionStorage.getItem('funix_dashboard_auth_user');
+                if (stored && AUTH_USERS[stored]) {
+                    loginUser(stored, false);
+                    return true;
+                }
+            } catch(e) {}
+            showLoginOverlay();
+            return false;
+        }
+
+        function showLoginOverlay() {
+            const overlay = document.getElementById('authOverlay');
+            const appWrapper = document.getElementById('dashboardAppWrapper');
+            if (overlay) overlay.style.display = 'flex';
+            if (appWrapper) appWrapper.style.display = 'none';
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function handleAuthLogin(event) {
+            if (event) event.preventDefault();
+            const uInput = document.getElementById('authUsernameInput');
+            const pInput = document.getElementById('authPasswordInput');
+            const errBox = document.getElementById('authErrorMessage');
+            const errText = document.getElementById('authErrorText');
+            
+            const u = (uInput.value || '').trim().toLowerCase();
+            const p = (pInput.value || '').trim();
+
+            if (!AUTH_USERS[u] || AUTH_USERS[u].pass !== p) {
+                if (errBox) {
+                    errBox.classList.remove('hidden');
+                    if (errText) errText.textContent = 'Tên đăng nhập hoặc mật khẩu không chính xác!';
+                }
+                return false;
+            }
+
+            if (!AUTH_USERS[u].canViewP1) {
+                if (errBox) {
+                    errBox.classList.remove('hidden');
+                    if (errText) errText.textContent = 'Tài khoản không có quyền truy cập Báo cáo P1-SE!';
+                }
+                return false;
+            }
+
+            if (errBox) errBox.classList.add('hidden');
+            try {
+                sessionStorage.setItem('funix_dashboard_auth_user', u);
+            } catch(e) {}
+            loginUser(u, true);
+            return false;
+        }
+
+        function loginUser(username, isFirstLogin) {
+            currentAuthUser = AUTH_USERS[username];
+            const overlay = document.getElementById('authOverlay');
+            const appWrapper = document.getElementById('dashboardAppWrapper');
+            
+            if (overlay) overlay.style.display = 'none';
+            if (appWrapper) appWrapper.style.display = 'block';
+
+            // Update user info badge in header
+            const infoBadge = document.getElementById('authUserInfoBadge');
+            const nameEl = document.getElementById('authUserDisplayName');
+            const roleEl = document.getElementById('authUserRoleName');
+            if (infoBadge) infoBadge.classList.remove('hidden');
+            if (nameEl) nameEl.textContent = currentAuthUser.name;
+            if (roleEl) roleEl.textContent = currentAuthUser.role;
+
             initP1Tab();
             renderP1Tab();
-            lucide.createIcons();
-        });
-    </script>
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function handleAuthLogout() {
+            try {
+                sessionStorage.removeItem('funix_dashboard_auth_user');
+            } catch(e) {}
+            window.location.reload();
+        }
+
+        function togglePasswordVisibility() {
+            const input = document.getElementById('authPasswordInput');
+            const icon = document.getElementById('authEyeIcon');
+            if (input) {
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    if (icon) icon.setAttribute('data-lucide', 'eye-off');
+                } else {
+                    input.type = 'password';
+                    if (icon) icon.setAttribute('data-lucide', 'eye');
+                }
+                if (window.lucide) lucide.createIcons();
+            }
+        }
+
+</script>
 </body>
 </html>
