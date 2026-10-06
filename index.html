@@ -4823,12 +4823,28 @@
         // ==========================================
         // AUTHENTICATION & ACCESS CONTROL (RBAC)
         // ==========================================
-        const AUTH_USERS = {
+                const AUTH_USERS = {
             admin: {
                 pass: "FunixAdmin@2026",
                 name: "Ban Lãnh Đạo (Admin)",
                 role: "Toàn quyền quản trị",
                 allowedTabs: ["tab-revenue", "tab-marketing", "tab-sales", "tab-dt-report", "tab-ty-trong", "tab-alerts", "tab-p1-report"],
+                defaultTab: "tab-revenue",
+                deptCode: "all"
+            },
+            sale_admin: {
+                pass: "SaleAdmin@2026",
+                name: "Sale Admin (Toàn bộ KD)",
+                role: "Quản trị dữ liệu Sales",
+                allowedTabs: ["tab-revenue", "tab-sales", "tab-dt-report"],
+                defaultTab: "tab-revenue",
+                deptCode: "all"
+            },
+            mkt_head: {
+                pass: "MktHead@2026",
+                name: "Trưởng Bộ Phận Marketing",
+                role: "MKT Head",
+                allowedTabs: ["tab-revenue", "tab-marketing", "tab-sales", "tab-ty-trong"],
                 defaultTab: "tab-revenue",
                 deptCode: "all"
             },
