@@ -1736,9 +1736,9 @@
                         <div>
                             <h3 class="font-bold text-sm text-slate-100 flex items-center gap-1.5">
                                 <i data-lucide="pie-chart" class="w-4 h-4 text-emerald-400"></i>
-                                <span>Cơ Cấu Doanh Thu Khóa Học Từ Lead SE</span>
-                            </h3>
-                            <p class="text-xs text-slate-400 mt-0.5">Tỷ trọng các khóa chốt được từ nguồn Lead SE</p>
+                                <span>Lead SE Tạo Thành Doanh Thu Của Những Khóa Học Nào</span>
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-0.5">Tỷ trọng các khóa học chốt được từ nguồn Lead SE (Cột Q - X)</p>
                         </div>
                         <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono" id="p1CrossSellShareBadge">...</span>
                     </div>
@@ -1803,26 +1803,20 @@
                     </div>
                 </div>
 
-                <!-- Phân loại Doanh Thu Theo Loại Lead & Strategic Insights -->
-                <div class="lg:col-span-5 space-y-6 flex flex-col justify-between">
-                    <!-- Loại Lead -->
-                    <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-5 space-y-3">
-                        <h3 class="font-bold text-sm text-slate-100 flex items-center gap-1.5">
-                            <i data-lucide="tag" class="w-4 h-4 text-purple-400"></i>
-                            <span>Doanh Thu SE Theo Phân Loại Lead Gốc</span>
-                        </h3>
-                        <div class="h-44 relative flex items-center justify-center">
-                            <canvas id="chartP1LoaiLeadDonut"></canvas>
+                <!-- Strategic Insights Card (Tối ưu mở rộng thay thế biểu đồ phân loại lead trùng lặp) -->
+                <div class="lg:col-span-5 bg-gradient-to-br from-emerald-950/25 via-slate-900/80 to-slate-900 border border-emerald-600/30 rounded-xl p-5 flex flex-col justify-between shadow-lg">
+                    <div class="space-y-3.5">
+                        <div class="flex items-center justify-between border-b border-emerald-800/40 pb-2.5">
+                            <div class="flex items-center gap-2 text-emerald-400 font-bold text-xs uppercase tracking-wider">
+                                <i data-lucide="sparkles" class="w-4 h-4"></i>
+                                <span>Chẩn Đoán Trọng Tâm (Executive Insights)</span>
+                            </div>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-semibold">Tự động phân tích</span>
                         </div>
-                    </div>
-
-                    <!-- Strategic Insights Card -->
-                    <div class="bg-emerald-950/20 border border-emerald-700/40 rounded-xl p-4 space-y-2.5">
-                        <div class="flex items-center gap-2 text-emerald-400 font-bold text-xs uppercase tracking-wider">
-                            <i data-lucide="sparkles" class="w-4 h-4"></i>
-                            <span>Chẩn Đoán Trọng Tâm (Executive Insights)</span>
-                        </div>
-                        <div id="p1ExecutiveInsightsList" class="text-xs text-slate-300 space-y-2 leading-relaxed">
+                        <p class="text-xs text-slate-400">
+                            Đánh giá hiệu suất phễu Lead SE, chuyển đổi chéo và khuyến nghị hành động thực chiến
+                        </p>
+                        <div id="p1ExecutiveInsightsList" class="text-xs text-slate-200 space-y-2.5 leading-relaxed pt-1">
                             <!-- dynamic insights -->
                         </div>
                     </div>
@@ -5146,7 +5140,7 @@
             renderP1ChannelComparison(leadSourceTotals, revSourceTotals, totalLead, totalDoanhThu);
 
             // 4. Render Loai Lead Donut
-            renderP1LoaiLeadDonut(loaiLeadTotals, totalDoanhThu);
+            // renderP1LoaiLeadDonut(loaiLeadTotals, totalDoanhThu); // Đã gỡ bỏ do trùng lặp dữ liệu Cột Q-X
 
             // 5. Render Strategic Insights
             renderP1Insights({
