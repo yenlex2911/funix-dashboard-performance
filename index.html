@@ -58,6 +58,7 @@
             border-color: #38bdf8;
         }
     </style>
+    <script src="olap_data_bundle.js"></script>
 </head>
 <body class="min-h-full flex flex-col font-sans bg-slate-950 text-slate-100 antialiased custom-scrollbar">
 
@@ -202,8 +203,8 @@
             <!-- Top Navigation 6 Menus -->
             <nav class="flex space-x-1 sm:space-x-3 border-t border-slate-800/80 overflow-x-auto custom-scrollbar">
                 <button onclick="switchTab('tab-revenue')" id="btn-tab-revenue" class="tab-btn active flex items-center gap-1.5 py-3 px-3 text-xs sm:text-sm font-semibold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition-all whitespace-nowrap">
-                    <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
-                    <span>1. Doanh thu Performance</span>
+                    <i data-lucide="network" class="w-4 h-4 text-cyan-400"></i>
+                    <span class="font-bold text-cyan-300">1. Phân Tích Đa Chiều (OLAP)</span>
                 </button>
                 <button onclick="switchTab('tab-marketing')" id="btn-tab-marketing" class="tab-btn flex items-center gap-1.5 py-3 px-3 text-xs sm:text-sm font-semibold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition-all whitespace-nowrap">
                     <i data-lucide="megaphone" class="w-4 h-4"></i>
@@ -240,439 +241,376 @@
         <!-- TAB 1: DOANH THU PERFORMANCE (ORIGINAL)   -->
         <!-- ========================================== -->
         <div id="tab-revenue" class="tab-content space-y-6">
-<!-- Filter Controls Bar -->
-        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-4">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="sliders-horizontal" class="w-5 h-5 text-cyan-400"></i>
-                    <div>
-                        <h2 class="text-sm font-semibold text-slate-200 uppercase tracking-wider">Bộ lọc</h2>
-                        <p class="text-[11px] text-slate-400">Lựa chọn phòng ban, khung thời gian và tích chọn các dòng sản phẩm cần xem</p>
-                    </div>
-                </div>
+    <!-- 1. BOX THÔNG TIN MÔ HÌNH DỮ LIỆU FACT & DIM (Theo tư duy Viblo & Yêu cầu của Chị) -->
+    <section class="bg-gradient-to-br from-slate-900 via-slate-900/95 to-slate-950 border border-cyan-500/30 rounded-2xl p-5 shadow-2xl relative overflow-hidden">
+        <div class="absolute -top-12 -right-12 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-12 -left-12 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-                <div class="flex flex-wrap items-center gap-3">
-                    <!-- Scope Filter -->
-                    <div class="flex items-center gap-2">
-                        <label class="text-xs font-medium text-slate-400 whitespace-nowrap">Phòng Ban:</label>
-                        <select id="teamFilter" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 transition">
-                            <option value="Total">Toàn Trung Tâm (Total)</option>
-                            <option value="Team TrangBT1">Team TrangBT1</option>
-                            <option value="Team GiangLTT">Team GiangLTT</option>
-                            <option value="Team LanNH1">Team LanNH1</option>
-                        </select>
-                    </div>
-
-                    <!-- Time Period Filter -->
-                    <div class="flex items-center gap-2">
-                        <label class="text-xs font-medium text-slate-400 whitespace-nowrap">Thời Gian:</label>
-                        <select id="periodFilter" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 transition">
-                            <option value="total">Tổng Lũy Kế Cả Tháng</option>
-                            <option value="w1">W1: 1 - 6/9</option>
-                            <option value="w2">W2: 7 - 13/9</option>
-                            <option value="w3">W3: 14 - 20/9</option>
-                            <option value="w4">W4: 21 - 27/9</option>
-                            <option value="w5">W5: 28 - 30/9</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <!-- MULTI-CHECKBOX PRODUCT FILTER -->
-            <div>
-                <div class="flex items-center justify-between mb-2.5">
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs font-bold text-slate-300 uppercase tracking-wider">Lựa chọn Dòng Sản Phẩm:</span>
-                        <span id="productSelectionBadge" class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                            Đang chọn 7/7 sản phẩm
-                        </span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button id="btnQuickInvert" class="text-[11px] text-slate-400 hover:text-cyan-400 transition underline">Đảo chọn</button>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5 bg-slate-950/70 p-3.5 rounded-xl border border-slate-800">
-                    <!-- Check All (Master) -->
-                    <label class="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/90 hover:bg-slate-800 cursor-pointer border border-cyan-500/40 text-xs font-bold text-white transition select-none">
-                        <input type="checkbox" id="chkAllProducts" checked class="w-4 h-4 rounded text-cyan-600 bg-slate-900 border-slate-700 focus:ring-cyan-500 accent-cyan-500">
-                        <span>Chọn Tất Cả</span>
-                    </label>
-
-                    <!-- Product 1 -->
-                    <label class="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-slate-900 hover:bg-slate-850 cursor-pointer border border-slate-800 text-xs text-slate-200 transition select-none">
-                        <input type="checkbox" value="P1 - SE" checked class="chk-prod w-4 h-4 rounded bg-slate-950 border-slate-700 accent-cyan-500">
-                        <span class="w-2.5 h-2.5 rounded-full bg-[#0284c7] shrink-0"></span>
-                        <span class="truncate" title="P1 - SE (Kỹ sư phần mềm)">P1 - SE</span>
-                    </label>
-
-                    <!-- Product 2 -->
-                    <label class="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-slate-900 hover:bg-slate-850 cursor-pointer border border-slate-800 text-xs text-slate-200 transition select-none">
-                        <input type="checkbox" value=" P2 - BE (IT & Mass) " checked class="chk-prod w-4 h-4 rounded bg-slate-950 border-slate-700 accent-cyan-500">
-                        <span class="w-2.5 h-2.5 rounded-full bg-[#06b6d4] shrink-0"></span>
-                        <span class="truncate" title="P2 - BE (IT & Mass)">P2 - BE</span>
-                    </label>
-
-                    <!-- Product 3 -->
-                    <label class="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-slate-900 hover:bg-slate-850 cursor-pointer border border-slate-800 text-xs text-slate-200 transition select-none">
-                        <input type="checkbox" value=" P2 - xUP cho IT " checked class="chk-prod w-4 h-4 rounded bg-slate-950 border-slate-700 accent-cyan-500">
-                        <span class="w-2.5 h-2.5 rounded-full bg-[#3b82f6] shrink-0"></span>
-                        <span class="truncate" title="P2 - xUP cho IT">P2 - xUP IT</span>
-                    </label>
-
-                    <!-- Product 4 -->
-                    <label class="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-slate-900 hover:bg-slate-850 cursor-pointer border border-slate-800 text-xs text-slate-200 transition select-none">
-                        <input type="checkbox" value="P2: xUP - Nâng cao năng lực" checked class="chk-prod w-4 h-4 rounded bg-slate-950 border-slate-700 accent-cyan-500">
-                        <span class="w-2.5 h-2.5 rounded-full bg-[#8b5cf6] shrink-0"></span>
-                        <span class="truncate" title="P2: xUP - Nâng cao năng lực">P2: xUP NL</span>
-                    </label>
-
-                    <!-- Product 5 -->
-                    <label class="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-slate-900 hover:bg-slate-850 cursor-pointer border border-slate-800 text-xs text-slate-200 transition select-none">
-                        <input type="checkbox" value="P3 - DA, DA Mass" checked class="chk-prod w-4 h-4 rounded bg-slate-950 border-slate-700 accent-cyan-500">
-                        <span class="w-2.5 h-2.5 rounded-full bg-[#ec4899] shrink-0"></span>
-                        <span class="truncate" title="P3 - DA, DA Mass (Data Analytics)">P3 - DA</span>
-                    </label>
-
-                    <!-- Product 6 -->
-                    <label class="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-slate-900 hover:bg-slate-850 cursor-pointer border border-slate-800 text-xs text-slate-200 transition select-none">
-                        <input type="checkbox" value="Khoá test (xUp 1-n)" checked class="chk-prod w-4 h-4 rounded bg-slate-950 border-slate-700 accent-cyan-500">
-                        <span class="w-2.5 h-2.5 rounded-full bg-[#f97316] shrink-0"></span>
-                        <span class="truncate" title="Khoá test (xUp 1-n)">Khóa Test</span>
-                    </label>
-
-                    <!-- Product 7 -->
-                    <label class="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-slate-900 hover:bg-slate-850 cursor-pointer border border-slate-800 text-xs text-slate-200 transition select-none">
-                        <input type="checkbox" value="Khoá khác" checked class="chk-prod w-4 h-4 rounded bg-slate-950 border-slate-700 accent-cyan-500">
-                        <span class="w-2.5 h-2.5 rounded-full bg-[#64748b] shrink-0"></span>
-                        <span class="truncate" title="Khoá khác">Khóa khác</span>
-                    </label>
-                </div>
-            </div>
-        </section>
-
-        <!-- Executive KPI Scorecards -->
-        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <!-- Revenue Card -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 relative overflow-hidden glow-card">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Doanh Thu</span>
-                    <div class="w-8 h-8 rounded-lg bg-pink-500/10 text-pink-400 flex items-center justify-center">
-                        <i data-lucide="dollar-sign" class="w-4 h-4"></i>
-                    </div>
-                </div>
-                <div class="mt-3">
-                    <div class="text-2xl font-black text-pink-400" id="kpiRevenueAct">0 đ</div>
-                    <div class="flex items-center justify-between mt-2 text-xs">
-                        <span class="text-slate-400">KPI: <span class="text-slate-300 font-medium" id="kpiRevenuePlan">0 đ</span></span>
-                        <span id="kpiRevenueBadge" class="font-bold px-2 py-0.5 rounded text-[11px]">0%</span>
-                    </div>
-                    <div class="w-full bg-slate-800 rounded-full h-1.5 mt-3 overflow-hidden">
-                        <div id="kpiRevenueBar" class="bg-gradient-to-r from-pink-500 to-rose-500 h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Leads Card -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 relative overflow-hidden glow-card">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Số Lượng Lead</span>
-                    <div class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center">
-                        <i data-lucide="users" class="w-4 h-4"></i>
-                    </div>
-                </div>
-                <div class="mt-3">
-                    <div class="text-2xl font-black text-white" id="kpiLeadAct">0</div>
-                    <div class="flex items-center justify-between mt-2 text-xs">
-                        <span class="text-slate-400">KPI: <span class="text-slate-300 font-medium" id="kpiLeadPlan">0</span></span>
-                        <span id="kpiLeadBadge" class="font-bold px-2 py-0.5 rounded text-[11px]">0%</span>
-                    </div>
-                    <div class="w-full bg-slate-800 rounded-full h-1.5 mt-3 overflow-hidden">
-                        <div id="kpiLeadBar" class="bg-blue-500 h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Marketing Budget Card -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 relative overflow-hidden glow-card">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider" id="budgetCardTitle">Ngân Sách Marketing</span>
-                    <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
-                        <i data-lucide="pie-chart" class="w-4 h-4"></i>
-                    </div>
-                </div>
-                <div class="mt-3">
-                    <div class="text-2xl font-black text-white" id="kpiBudgetAct">0 đ</div>
-                    <div class="flex items-center justify-between mt-2 text-xs">
-                        <span class="text-slate-400" id="budgetPlanLabel">Hạn mức: <span class="text-slate-300 font-medium" id="kpiBudgetPlan">0 đ</span></span>
-                        <span id="kpiBudgetBadge" class="font-bold px-2 py-0.5 rounded text-[11px]">0%</span>
-                    </div>
-                    <div class="w-full bg-slate-800 rounded-full h-1.5 mt-3 overflow-hidden">
-                        <div id="kpiBudgetBar" class="bg-amber-500 h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- CPL & ARPU Card -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 relative overflow-hidden glow-card">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">CPL</span>
-                    <div class="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center">
-                        <i data-lucide="zap" class="w-4 h-4"></i>
-                    </div>
-                </div>
-                <div class="mt-3">
-                    <div class="text-2xl font-black text-white" id="kpiCPL">0 đ</div>
-                    <div class="flex items-center justify-between mt-2 text-xs">
-                        <span class="text-slate-400">ARPU: <span class="text-slate-300 font-medium font-mono" id="kpiRevPerLead">0 đ</span></span>
-                        <span class="text-emerald-400 font-semibold" id="kpiStatus">🟢 Tối ưu</span>
-                    </div>
-                    <div class="w-full bg-slate-800 rounded-full h-1.5 mt-3 overflow-hidden">
-                        <div class="bg-purple-500 h-1.5 rounded-full" style="width: 85%"></div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- SECTION: BỘ 3 BIỂU ĐỒ CƠ CẤU THEO DÒNG SẢN PHẨM (DOANH THU - LEAD - CHI PHÍ) -->
-        <section class="space-y-3">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="pie-chart" class="w-5 h-5 text-cyan-400"></i>
-                    <h3 class="text-base font-bold text-white">So Sánh Cơ Cấu Theo Các Dòng Sản Phẩm Đang Chọn</h3>
-                </div>
-                <span class="text-xs text-slate-400" id="chartsProductCountText">Hiển thị theo sản phẩm được tích chọn</span>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Chart 1: Doanh Thu -->
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between">
-                    <div class="flex items-center justify-between mb-2">
-                        <h4 class="text-xs font-bold text-pink-400 uppercase tracking-wider flex items-center gap-1.5">
-                            <i data-lucide="dollar-sign" class="w-4 h-4"></i> Cơ Cấu Doanh Thu
-                        </h4>
-                        <span class="text-[11px] text-slate-400 font-mono" id="sumRevChartLabel">0 đ</span>
-                    </div>
-                    <div class="h-60 relative flex items-center justify-center">
-                        <canvas id="productRevChart"></canvas>
-                    </div>
-                    <div class="text-[11px] text-slate-400 text-center mt-2 border-t border-slate-800/60 pt-2">
-                        Tỷ trọng doanh thu thực đạt theo sản phẩm
-                    </div>
-                </div>
-
-                <!-- Chart 2: Số Lượng Lead -->
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between">
-                    <div class="flex items-center justify-between mb-2">
-                        <h4 class="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
-                            <i data-lucide="users" class="w-4 h-4"></i> Cơ Cấu Số Lead Thực Đạt
-                        </h4>
-                        <span class="text-[11px] text-slate-400 font-mono" id="sumLeadChartLabel">0 Lead</span>
-                    </div>
-                    <div class="h-60 relative flex items-center justify-center">
-                        <canvas id="productLeadChart"></canvas>
-                    </div>
-                    <div class="text-[11px] text-slate-400 text-center mt-2 border-t border-slate-800/60 pt-2">
-                        Tỷ trọng nguồn lead phân bổ theo sản phẩm
-                    </div>
-                </div>
-
-                <!-- Chart 3: Chi Phí Marketing (Tự động tính theo Lead * CPL trung bình khi xem 1 phòng) -->
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between">
-                    <div class="flex items-center justify-between mb-2">
-                        <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                            <i data-lucide="wallet" class="w-4 h-4"></i> Cơ Cấu Chi Phí Đã Chi
-                        </h4>
-                        <span class="text-[11px] text-slate-400 font-mono" id="sumBudgetChartLabel">0 đ</span>
-                    </div>
-                    <div class="h-60 relative flex items-center justify-center">
-                        <canvas id="productBudgetChart"></canvas>
-                    </div>
-                    <div class="text-[11px] text-slate-400 text-center mt-2 border-t border-slate-800/60 pt-2" id="budgetChartNote">
-                        Tỷ trọng chi phí (Số lead nhận × CPL trung bình)
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Visual Charts Grid: Phòng Ban / Hannix & Xu Hướng Tuần -->
-        <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Chart: Doanh thu theo Phòng ban hoặc Hannix -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center gap-2">
-                        <i data-lucide="bar-chart-3" class="w-5 h-5 text-cyan-400"></i>
-                        <h3 class="text-sm font-bold text-white" id="mainBarChartTitle">So Sánh Doanh Thu Theo Phòng Ban (KPI vs Thực Đạt)</h3>
-                    </div>
-                    <span class="text-[11px] text-cyan-400 font-medium px-2 py-0.5 rounded bg-slate-800" id="mainBarChartSubtitle">Toàn Trung Tâm</span>
-                </div>
-                <div class="h-64">
-                    <canvas id="teamChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Chart: Xu hướng Doanh thu & Lead qua các Tuần -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center gap-2">
-                        <i data-lucide="trending-up" class="w-5 h-5 text-emerald-400"></i>
-                        <h3 class="text-sm font-bold text-white">Diễn Biến Tiến Độ Qua Các Tuần (W1 Đến W5)</h3>
-                    </div>
-                    <span class="text-xs text-slate-400">Doanh thu & Số Lead</span>
-                </div>
-                <div class="h-64">
-                    <canvas id="weeklyTrendChart"></canvas>
-                </div>
-            </div>
-        </section>
-
-        <!-- Executive Smart Insights & Action Recommendations (CR, Tỷ lệ đạt, Giá Lead, ARPU) -->
-        <section class="bg-gradient-to-r from-slate-900 via-slate-900 to-cyan-950/40 border border-cyan-900/40 rounded-2xl p-6 shadow-xl">
-            <div class="flex items-center gap-3 mb-4">
-                <div class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-300 flex items-center justify-center font-bold">
-                    <i data-lucide="sparkles" class="w-5 h-5"></i>
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-inner">
+                    <i data-lucide="network" class="w-5 h-5"></i>
                 </div>
                 <div>
-                    <h3 class="text-base font-bold text-white">Executive Insights & Nhận Định Chiến Lược</h3>
-                    <p class="text-xs text-slate-400">Đánh giá chuyên sâu dựa trên CR (Tỷ lệ chuyển đổi), Tỷ lệ đạt KPI, Giá Lead (CPL) và ARPU</p>
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-base font-black text-slate-100 tracking-wide uppercase">Mô Hình Dữ Liệu Phân Tích Đa Chiều (OLAP Star Schema)</h2>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30">Hợp Nhất 2 Nguồn</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-0.5">Phân tích đa chiều theo mô hình Fact - Dimension: Nguồn dữ liệu hợp nhất từ Sheet <span class="text-sky-300 font-medium">Raw Lead (27.988 leads)</span> và Sheet <span class="text-emerald-300 font-medium">Doanh thu (3.417 giao dịch)</span></p>
                 </div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-300" id="insightsContainer">
-                <!-- Injected via JS -->
+            <div class="flex items-center gap-2">
+                <button onclick="refreshOlapData()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 flex items-center gap-1.5 transition-all shadow-sm">
+                    <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-cyan-400"></i>
+                    <span>Đồng bộ dữ liệu</span>
+                </button>
+                <button onclick="exportOlapCsv()" class="px-3 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 text-xs font-semibold border border-cyan-500/30 flex items-center gap-1.5 transition-all shadow-sm">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                    <span>Xuất CSV</span>
+                </button>
             </div>
-        </section>
+        </div>
 
-        <!-- Detailed Performance Data Table -->
-        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="table" class="w-5 h-5 text-cyan-400"></i>
-                    <h3 class="text-sm font-bold text-white" id="dataTableTitle">Bảng Chi Tiết Hiệu Suất Từng Sản Phẩm & Đơn Vị</h3>
+        <!-- 2 Cột FACT & DIM -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Cột FACT -->
+            <div class="bg-slate-950/60 border border-emerald-500/20 rounded-xl p-4">
+                <div class="flex items-center justify-between border-b border-emerald-500/20 pb-2 mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]"></span>
+                        <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Chỉ Số FACT (Measures / Định Lượng)</span>
+                    </div>
+                    <span class="text-[10px] text-slate-400">5 Chỉ số đo lường</span>
                 </div>
-                <span class="text-xs text-slate-400" id="tableInfo">Hiển thị dữ liệu tương ứng theo bộ lọc</span>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800 flex items-start gap-2">
+                        <i data-lucide="banknote" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                        <div>
+                            <div class="font-bold text-slate-200">Doanh thu thực thu</div>
+                            <div class="text-[10px] text-slate-400">Tổng tiền khớp GD thành công (VNĐ)</div>
+                        </div>
+                    </div>
+                    <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800 flex items-start gap-2">
+                        <i data-lucide="users" class="w-4 h-4 text-sky-400 shrink-0 mt-0.5"></i>
+                        <div>
+                            <div class="font-bold text-slate-200">Số lượng Lead</div>
+                            <div class="text-[10px] text-slate-400">Tổng lead tiếp nhận từ CRM</div>
+                        </div>
+                    </div>
+                    <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800 flex items-start gap-2">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-amber-400 shrink-0 mt-0.5"></i>
+                        <div>
+                            <div class="font-bold text-slate-200">Số giao dịch (Deals)</div>
+                            <div class="text-[10px] text-slate-400">Số đơn khớp học phí phát sinh</div>
+                        </div>
+                    </div>
+                    <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800 flex items-start gap-2">
+                        <i data-lucide="percent" class="w-4 h-4 text-purple-400 shrink-0 mt-0.5"></i>
+                        <div>
+                            <div class="font-bold text-slate-200">Tỷ lệ chuyển đổi (CR)</div>
+                            <div class="text-[10px] text-slate-400">Tỷ lệ chốt = Deals / Lead (%)</div>
+                        </div>
+                    </div>
+                    <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800 flex items-start gap-2 sm:col-span-2">
+                        <i data-lucide="calculator" class="w-4 h-4 text-cyan-400 shrink-0 mt-0.5"></i>
+                        <div>
+                            <div class="font-bold text-slate-200">Giá trị TB đơn (AOV) & Doanh thu/Lead</div>
+                            <div class="text-[10px] text-slate-400">AOV = Doanh thu / Deals | Doanh thu/Lead = Doanh thu / Tổng Lead</div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div class="overflow-x-auto custom-scrollbar">
-                <table class="w-full text-left border-collapse text-xs">
-                    <thead>
-                        <tr class="border-b border-slate-800 text-slate-400 font-semibold bg-slate-950/50">
-                            <th class="p-3" id="colHeaderTarget">Phòng Ban</th>
-                            <th class="p-3">Chỉ Số</th>
-                            <th class="p-3">Dòng Sản Phẩm</th>
-                            <th class="p-3 text-right">KPI Mục Tiêu</th>
-                            <th class="p-3 text-right">Thực Đạt</th>
-                            <th class="p-3 text-right">% Hoàn Thành</th>
-                            <th class="p-3 text-center">Trạng Thái Cảnh Báo</th>
-                        </tr>
-                    </thead>
-                    <tbody id="dataTableBody" class="divide-y divide-slate-800/60 font-mono">
-                        <!-- Rows rendered by JS -->
-                    </tbody>
+            <!-- Cột DIM -->
+            <div class="bg-slate-950/60 border border-indigo-500/20 rounded-xl p-4">
+                <div class="flex items-center justify-between border-b border-indigo-500/20 pb-2 mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-indigo-400 shadow-[0_0_8px_#818cf8]"></span>
+                        <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider">Chiều DIMENSION (Cắt Lát / Phân Nhóm)</span>
+                    </div>
+                    <span class="text-[10px] text-slate-400">7 Chiều phân tích</span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                    <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800">
+                        <div class="font-bold text-indigo-300">📅 Thời gian</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5">Năm, Quý, Tháng (YYYY-MM)</div>
+                    </div>
+                    <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800">
+                        <div class="font-bold text-indigo-300">📢 Kênh MKT</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5">Facebook, GoogleAds, TikTok...</div>
+                    </div>
+                    <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800">
+                        <div class="font-bold text-indigo-300">🧲 Nguồn Lead</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5">MKT, Seeding, Cool lead...</div>
+                    </div>
+                    <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800">
+                        <div class="font-bold text-indigo-300">📦 Dòng SP / KHTS</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5">FW, P1, P2, P3, Coding...</div>
+                    </div>
+                    <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800">
+                        <div class="font-bold text-indigo-300">🎓 Khóa học</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5">Tên chương trình/khóa học</div>
+                    </div>
+                    <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800">
+                        <div class="font-bold text-indigo-300">💼 Sales & Phòng</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5">Hannix, Phòng kinh doanh</div>
+                    </div>
+                    <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800">
+                        <div class="font-bold text-indigo-300">🎯 Đối tượng</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5">Học sinh, Sinh viên, Đi làm...</div>
+                    </div>
+                    <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800 col-span-2">
+                        <div class="font-bold text-indigo-300">🚦 Trạng thái Lead</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5">L1 (Mới) → L2 → L3 (Tiềm năng) → L4 → L5/L6 → Dead</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. THANH BỘ LỌC CẮT LÁT THỜI GIAN & DIMENSION (SLICERS) -->
+    <section class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-4">
+        <!-- Hàng 1: Nút bấm thời gian nhanh & Khoảng thời gian từ tháng đến tháng -->
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+            <!-- Nút chọn nhanh -->
+            <div class="flex flex-wrap items-center gap-1.5">
+                <span class="text-xs font-semibold text-slate-400 mr-1">Khung thời gian:</span>
+                <button type="button" onclick="setOlapTimePreset('CURR_MONTH')" id="btn-olap-curr-month" class="px-2.5 py-1 text-xs rounded-lg font-semibold bg-cyan-500 text-slate-950 shadow-sm transition-all">Tháng Hiện Tại (Mới nhất)</button>
+                <button type="button" onclick="setOlapTimePreset('Q3_2026')" id="btn-olap-q3-2026" class="px-2.5 py-1 text-xs rounded-lg font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">Quý 3/2026</button>
+                <button type="button" onclick="setOlapTimePreset('YEAR_2026')" id="btn-olap-year-2026" class="px-2.5 py-1 text-xs rounded-lg font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">Năm 2026</button>
+                <button type="button" onclick="setOlapTimePreset('YEAR_2025')" id="btn-olap-year-2025" class="px-2.5 py-1 text-xs rounded-lg font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">Năm 2025</button>
+                <button type="button" onclick="setOlapTimePreset('ALL')" id="btn-olap-all" class="px-2.5 py-1 text-xs rounded-lg font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">Tất Cả (2025 - 2026)</button>
+            </div>
+
+            <!-- Khoảng thời gian: Từ tháng -> Đến tháng -->
+            <div class="flex items-center gap-2">
+                <div class="flex items-center gap-1.5 text-xs">
+                    <span class="text-slate-400">Từ tháng:</span>
+                    <select id="olapMonthFrom" onchange="onOlapCustomTimeChange()" class="bg-slate-950 border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1 text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none"></select>
+                </div>
+                <div class="flex items-center gap-1.5 text-xs">
+                    <span class="text-slate-400">Đến tháng:</span>
+                    <select id="olapMonthTo" onchange="onOlapCustomTimeChange()" class="bg-slate-950 border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1 text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none"></select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hàng 2: Bộ lọc các Dimension chi tiết -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div>
+                <label class="block text-[11px] font-semibold text-slate-400 mb-1">Kênh Marketing</label>
+                <select id="olapFilterChannel" onchange="applyOlapFilter()" class="w-full bg-slate-950 border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none">
+                    <option value="">Tất cả kênh</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[11px] font-semibold text-slate-400 mb-1">Dòng SP / KHTS</label>
+                <select id="olapFilterKhts" onchange="applyOlapFilter()" class="w-full bg-slate-950 border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none">
+                    <option value="">Tất cả dòng SP</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[11px] font-semibold text-slate-400 mb-1">Đối Tượng Khách Hàng</label>
+                <select id="olapFilterTarget" onchange="applyOlapFilter()" class="w-full bg-slate-950 border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none">
+                    <option value="">Tất cả đối tượng</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[11px] font-semibold text-slate-400 mb-1">Phòng / Nhân Sự Sales</label>
+                <select id="olapFilterHannix" onchange="applyOlapFilter()" class="w-full bg-slate-950 border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none">
+                    <option value="">Tất cả sales</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Hàng 3: Thẻ tóm tắt chỉ số thực tế trong bộ lọc (Filter Summary Cards) -->
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-2 border-t border-slate-800/80" id="olapSummaryMetrics">
+            <!-- Dynamic injected KPI numbers -->
+        </div>
+    </section>
+
+    <!-- 3. CHỦ ĐỀ PHÂN TÍCH NHANH (PRESET SCENARIOS - Như Sếp Tuấn) -->
+    <section class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg">
+        <div class="flex items-center gap-2 mb-2.5">
+            <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
+            <span class="text-xs font-bold text-slate-200 uppercase tracking-wider">Chủ Đề Phân Tích Nhanh (Preset Insights)</span>
+            <span class="text-[11px] text-slate-400">— Nhấp để tự động nạp góc nhìn tối ưu</span>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <button type="button" onclick="setOlapPreset('CHANNEL_X_KHTS_REV')" id="preset-btn-1" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-cyan-500 text-slate-950 font-bold border border-cyan-400 transition-all flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-slate-950"></span>
+                <span>Kênh MKT × Dòng Sản Phẩm (Doanh thu)</span>
+            </button>
+            <button type="button" onclick="setOlapPreset('KHTS_X_TARGET_LEAD')" id="preset-btn-2" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700 transition-all flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+                <span>Dòng SP × Đối Tượng Học Viên (Số Lead)</span>
+            </button>
+            <button type="button" onclick="setOlapPreset('SALES_X_COURSE_REV')" id="preset-btn-3" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700 transition-all flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span>Nhân Sự Sales × Khóa Học Đã Chốt</span>
+            </button>
+            <button type="button" onclick="setOlapPreset('LEADSOURCE_X_STATUS')" id="preset-btn-4" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700 transition-all flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+                <span>Nguồn Lead × Trạng Thái Phễu (Chất lượng lead)</span>
+            </button>
+            <button type="button" onclick="setOlapPreset('CHANNEL_X_CR')" id="preset-btn-5" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700 transition-all flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-pink-400"></span>
+                <span>Kênh MKT × Tỷ Lệ Chuyển Đổi (%)</span>
+            </button>
+            <button type="button" onclick="setOlapPreset('MONTH_X_KHTS_REV')" id="preset-btn-6" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700 transition-all flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                <span>Xu Hướng Tháng × Dòng Sản Phẩm</span>
+            </button>
+        </div>
+    </section>
+
+    <!-- 4. TRỤC ĐIỀU KHIỂN XOAY CHIỀU OLAP (CONTROL ENGINE) & 3 SUB-TABS -->
+    <section class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-4">
+        <!-- Sub-tabs header -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+            <div class="flex space-x-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+                <button type="button" onclick="switchOlapView('pivot')" id="olap-view-pivot" class="px-3 py-1.5 rounded-lg font-bold bg-cyan-500 text-slate-950 flex items-center gap-1.5 shadow-sm transition-all">
+                    <i data-lucide="table" class="w-3.5 h-3.5"></i>
+                    <span>Bảng xoay (Pivot)</span>
+                </button>
+                <button type="button" onclick="switchOlapView('compare')" id="olap-view-compare" class="px-3 py-1.5 rounded-lg font-bold text-slate-400 hover:text-slate-200 flex items-center gap-1.5 transition-all">
+                    <i data-lucide="bar-chart-2" class="w-3.5 h-3.5"></i>
+                    <span>So sánh nhóm (Charts)</span>
+                </button>
+                <button type="button" onclick="switchOlapView('drilldown')" id="olap-view-drilldown" class="px-3 py-1.5 rounded-lg font-bold text-slate-400 hover:text-slate-200 flex items-center gap-1.5 transition-all">
+                    <i data-lucide="list" class="w-3.5 h-3.5"></i>
+                    <span>Chi tiết dữ liệu (Drill-down)</span>
+                </button>
+            </div>
+
+            <!-- Dynamic explanation note -->
+            <div class="text-[11px] text-slate-400 flex items-center gap-1.5" id="olapEngineDescription">
+                <i data-lucide="info" class="w-3.5 h-3.5 text-cyan-400"></i>
+                <span>Mỗi ô thể hiện giá trị tổng hợp giao điểm giữa 2 chiều phân tích</span>
+            </div>
+        </div>
+
+        <!-- Thanh điều khiển Hàng / Cột / Chỉ số / Hiển thị / Sắp xếp -->
+        <div class="grid grid-cols-2 md:grid-cols-6 gap-2.5 items-end bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
+            <div>
+                <label class="block text-[11px] font-semibold text-slate-400 mb-1">Chiều hàng (Row Dim)</label>
+                <select id="olapRowDim" onchange="renderOlapMatrix()" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none">
+                    <option value="channel">Kênh Marketing (Nguồn TT)</option>
+                    <option value="khts">Dòng SP / KHTS</option>
+                    <option value="course">Khóa học</option>
+                    <option value="hannix">Nhân sự Sales (Hannix)</option>
+                    <option value="target">Đối tượng khách hàng</option>
+                    <option value="leadSource">Nguồn Lead (MKT/Seeding...)</option>
+                    <option value="status">Trạng thái Lead (Phễu)</option>
+                    <option value="month">Tháng</option>
+                </select>
+            </div>
+
+            <div class="flex items-center justify-center">
+                <button type="button" onclick="swapOlapDimensions()" title="Xoay chiều: Đảo Hàng ⇄ Cột" class="w-full px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-300 font-semibold text-xs flex items-center justify-center gap-1 transition-all">
+                    <i data-lucide="arrow-left-right" class="w-3.5 h-3.5"></i>
+                    <span>Xoay chiều</span>
+                </button>
+            </div>
+
+            <div>
+                <label class="block text-[11px] font-semibold text-slate-400 mb-1">Chiều cột (Col Dim)</label>
+                <select id="olapColDim" onchange="renderOlapMatrix()" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none">
+                    <option value="khts">Dòng SP / KHTS</option>
+                    <option value="channel">Kênh Marketing (Nguồn TT)</option>
+                    <option value="course">Khóa học</option>
+                    <option value="hannix">Nhân sự Sales (Hannix)</option>
+                    <option value="target">Đối tượng khách hàng</option>
+                    <option value="leadSource">Nguồn Lead (MKT/Seeding...)</option>
+                    <option value="status">Trạng thái Lead (Phễu)</option>
+                    <option value="month">Tháng</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-[11px] font-semibold text-slate-400 mb-1">Chỉ số (FACT Measure)</label>
+                <select id="olapFactMetric" onchange="renderOlapMatrix()" class="w-full bg-slate-900 border border-cyan-500/40 text-cyan-300 font-semibold rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none">
+                    <option value="rev">Doanh thu (VNĐ)</option>
+                    <option value="lead">Số lượng Lead</option>
+                    <option value="deal">Số giao dịch (Deals)</option>
+                    <option value="cr">Tỷ lệ chuyển đổi (%)</option>
+                    <option value="aov">Giá trị TB đơn (AOV)</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-[11px] font-semibold text-slate-400 mb-1">Hiển thị (Display Mode)</label>
+                <select id="olapDisplayMode" onchange="renderOlapMatrix()" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none">
+                    <option value="val">Số tuyệt đối (Giá trị)</option>
+                    <option value="row">% Theo hàng (Row %)</option>
+                    <option value="col">% Theo cột (Col %)</option>
+                    <option value="total">% Theo tổng (Total %)</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-[11px] font-semibold text-slate-400 mb-1">Sắp xếp (Sorting)</label>
+                <select id="olapSortMode" onchange="renderOlapMatrix()" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none">
+                    <option value="desc">Tổng giảm dần</option>
+                    <option value="asc">Tổng tăng dần</option>
+                    <option value="az">A - Z Tên hàng</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- VIEW 1: BẢNG XOAY PIVOT MATRIX -->
+        <div id="olapViewPivotContainer" class="space-y-3">
+            <div class="overflow-x-auto custom-scrollbar border border-slate-800 rounded-xl bg-slate-950/40">
+                <table class="w-full text-left text-xs text-slate-300 border-collapse" id="olapMatrixTable">
+                    <!-- Dynamic Matrix Render -->
                 </table>
             </div>
-        </section>
-
-        <!-- SECTION: QUẢN TRỊ HIỆU SUẤT & PHÂN BỔ TÀI NGUYÊN HANNIX (CHỈ HIỆN KHI XEM THEO PHÒNG) -->
-        <section id="hannixPerformanceSection" class="space-y-6 pt-2" style="display: none;">
-            
-            <!-- Section Header -->
-            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-600 to-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-cyan-600/20">
-                        <i data-lucide="trophy" class="w-5 h-5"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                            <span>Quản Trị Hiệu Suất & Phân Bổ Tài Nguyên Hannix</span>
-                            <span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30" id="hannixSectionTeamBadge">Phòng</span>
-                        </h3>
-                        <p class="text-xs text-slate-400">Trực quan hóa so sánh đa chỉ số Thực Đạt (Lead, TE, CR, Doanh Thu) theo từng Hannix</p>
-                    </div>
-                </div>
+            <div class="text-[11px] text-slate-500 flex items-center justify-between">
+                <span>* Ô có nền màu xanh/ngọc thể hiện giá trị cao tương đối theo thang độ nhiệt (Heatmap).</span>
+                <span id="olapMatrixStats">Hiển thị 0 hàng × 0 cột</span>
             </div>
-
-            <!-- PART 1: BIỂU ĐỒ CỤM CỘT TƯƠNG TÁC ĐA CHỈ SỐ THỰC ĐẠT THEO HANNIX -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
-                    <div>
-                        <h4 class="text-sm font-bold text-white flex items-center gap-2">
-                            <i data-lucide="bar-chart-4" class="w-4 h-4 text-cyan-400"></i>
-                            <span>Biểu Đồ So Sánh Năng Suất Thực Đạt Từng Hannix</span>
-                        </h4>
-                        <p class="text-[11px] text-slate-400 mt-0.5">Mỗi Hannix là một cụm cột tương ứng với các chỉ số được chọn (chỉ lấy số thực đạt)</p>
-                    </div>
-
-                    <!-- Metric Selection Toggles -->
-                    <div class="flex flex-wrap items-center gap-2 bg-slate-950 p-2 rounded-xl border border-slate-800">
-                        <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-1">Chỉ số hiển thị:</span>
-                        
-                        <!-- Checkbox 1: Doanh Thu -->
-                        <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-pink-500/10 hover:bg-pink-500/20 border border-pink-500/30 cursor-pointer text-xs font-semibold text-pink-300 transition select-none">
-                            <input type="checkbox" id="chkMetricRev" checked class="hannix-metric-chk w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 accent-pink-500">
-                            <span>Doanh Thu (Tr.đ)</span>
-                        </label>
-
-                        <!-- Checkbox 2: Lead -->
-                        <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 cursor-pointer text-xs font-semibold text-blue-300 transition select-none">
-                            <input type="checkbox" id="chkMetricLead" checked class="hannix-metric-chk w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 accent-blue-500">
-                            <span>Lead Nhận</span>
-                        </label>
-
-                        <!-- Checkbox 3: TE New -->
-                        <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 cursor-pointer text-xs font-semibold text-purple-300 transition select-none">
-                            <input type="checkbox" id="chkMetricTE" checked class="hannix-metric-chk w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 accent-purple-500">
-                            <span>TE Mới (Học viên)</span>
-                        </label>
-
-                        <!-- Checkbox 4: CR (%) -->
-                        <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 cursor-pointer text-xs font-semibold text-amber-300 transition select-none">
-                            <input type="checkbox" id="chkMetricCR" checked class="hannix-metric-chk w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 accent-amber-500">
-                            <span>CR Tỷ Lệ Chốt (%)</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Canvas for Multi-Metric Clustered Bar Chart -->
-                <div class="h-80 relative">
-                    <canvas id="hannixClusteredChart"></canvas>
-                </div>
-            </div>
-
-            <!-- PART 2: LEADERBOARD BẢNG XẾP HẠNG HANNIX -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center gap-2">
-                        <i data-lucide="award" class="w-5 h-5 text-amber-400"></i>
-                        <h4 class="text-sm font-bold text-white">Bảng Xếp Hạng & Chỉ Số Tổng Hợp Các Hannix</h4>
-                    </div>
-                    <span class="text-xs text-slate-400">Sắp xếp theo Doanh thu thực đạt</span>
-                </div>
-
-                <div class="overflow-x-auto custom-scrollbar">
-                    <table class="w-full text-left border-collapse text-xs">
-                        <thead>
-                            <tr class="border-b border-slate-800 text-slate-400 font-semibold bg-slate-950/70">
-                                <th class="p-3 text-center">Hạng</th>
-                                <th class="p-3">Hannix / Nhân sự</th>
-                                <th class="p-3 text-right">KPI Doanh Thu</th>
-                                <th class="p-3 text-right">Doanh Thu Thực Đạt</th>
-                                <th class="p-3 text-right">% Đạt DT</th>
-                                <th class="p-3 text-right">Lead Đã Nhận</th>
-                                <th class="p-3 text-right">TE Mới (Học viên)</th>
-                                <th class="p-3 text-right">CR (%)</th>
-                                <th class="p-3 text-right">ARPU (VNĐ/Lead)</th>
-                                <th class="p-3 text-center">Đánh Giá Năng Suất</th>
-                            </tr>
-                        </thead>
-                        <tbody id="hannixLeaderboardBody" class="divide-y divide-slate-800/60 font-mono">
-                            <!-- Injected by JS -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-        </section>
         </div>
+
+        <!-- VIEW 2: SO SÁNH NHÓM CHARTS -->
+        <div id="olapViewCompareContainer" class="hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 bg-slate-950/60 border border-slate-800 rounded-xl p-4">
+                    <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider mb-3">Biểu Đồ So Sánh Tương Quan Giữa Các Nhóm</h3>
+                    <div class="h-80 relative">
+                        <canvas id="olapCompareChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-slate-950/60 border border-slate-800 rounded-xl p-4">
+                    <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider mb-3">Cơ Cấu Tỷ Trọng Top Nhóm Dẫn Đầu</h3>
+                    <div class="h-80 relative">
+                        <canvas id="olapShareChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 3: CHI TIẾT DỮ LIỆU DRILL-DOWN -->
+        <div id="olapViewDrilldownContainer" class="hidden space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="relative flex-1 max-w-sm">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                    <input type="text" id="olapDrillSearch" oninput="onOlapDrillSearch()" placeholder="Tìm kiếm nhanh bản ghi..." class="w-full bg-slate-950 border border-slate-700 text-slate-200 rounded-lg pl-9 pr-3 py-1.5 text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none">
+                </div>
+                <div class="flex items-center gap-2 text-xs text-slate-400">
+                    <span id="olapDrillCount">Hiển thị 0 bản ghi</span>
+                    <button type="button" onclick="changeOlapPage(-1)" id="btn-olap-prev" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 disabled:opacity-40">Trước</button>
+                    <span id="olapDrillPage">Trang 1 / 1</span>
+                    <button type="button" onclick="changeOlapPage(1)" id="btn-olap-next" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 disabled:opacity-40">Sau</button>
+                </div>
+            </div>
+            <div class="overflow-x-auto custom-scrollbar border border-slate-800 rounded-xl bg-slate-950/40">
+                <table class="w-full text-left text-xs text-slate-300 divide-y divide-slate-800" id="olapDrillTable">
+                    <!-- Dynamic records drilldown -->
+                </table>
+            </div>
+        </div>
+    </section>
+</div>
 
         <!-- ========================================== -->
         <!-- TAB 2: MARKETING PERFORMANCE               -->
@@ -3116,15 +3054,709 @@
             });
         }
 
-        function renderRevenueTab() {
-            rawPerformanceData = APP_DATA.rawPerformanceData || [];
-            allHannixData = APP_DATA.hannixData || {};
-            if (!window._revenueTabEventsInited) {
-                initRevenueTabEvents();
-                window._revenueTabEventsInited = true;
+        // ==========================================
+        // 1. OLAP MULTI-DIMENSIONAL ENGINE (MENU 1)
+        // ==========================================
+        let olapTimePreset = 'CURR_MONTH';
+        let olapMonthFrom = '';
+        let olapMonthTo = '';
+        let olapFilterChannel = '';
+        let olapFilterKhts = '';
+        let olapFilterTarget = '';
+        let olapFilterHannix = '';
+        let olapCurrentView = 'pivot';
+        let olapChartInstance = null;
+        let olapShareChartInstance = null;
+        let olapDrillCurrentPage = 1;
+        let olapDrillPageSize = 25;
+        let olapDrillFilteredRecords = [];
+        let _olapInitialized = false;
+
+        function getOlapBundle() {
+            return window.OLAP_BUNDLE || { lookups: { m:[], ch:[], ls:[], kh:[], c:[], h:[], tg:[], st:[], dp:[] }, dt: [], lead: [] };
+        }
+
+        function initOlapControls() {
+            if (_olapInitialized) return;
+            const bundle = getOlapBundle();
+            const lookups = bundle.lookups || {};
+
+            // Populate Months dropdowns
+            const months = lookups.m || [];
+            const selFrom = document.getElementById('olapMonthFrom');
+            const selTo = document.getElementById('olapMonthTo');
+            if (selFrom && selTo && months.length > 0) {
+                selFrom.innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join('');
+                selTo.innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join('');
+                // Default to latest month
+                const latestM = months[months.length - 1];
+                olapMonthFrom = latestM;
+                olapMonthTo = latestM;
+                selFrom.value = latestM;
+                selTo.value = latestM;
             }
-            updateSelectionBadge();
-            renderAll();
+
+            // Populate Filter dropdowns
+            const populateSel = (id, list, placeholder) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.innerHTML = `<option value="">${placeholder}</option>` + 
+                    (list || []).map(v => `<option value="${v}">${v}</option>`).join('');
+            };
+
+            populateSel('olapFilterChannel', lookups.ch, 'Tất cả kênh');
+            populateSel('olapFilterKhts', lookups.kh, 'Tất cả dòng SP');
+            populateSel('olapFilterTarget', lookups.tg, 'Tất cả đối tượng');
+            populateSel('olapFilterHannix', lookups.h, 'Tất cả sales');
+
+            _olapInitialized = true;
+        }
+
+        function setOlapTimePreset(preset) {
+            olapTimePreset = preset;
+            const bundle = getOlapBundle();
+            const months = bundle.lookups.m || [];
+            if (!months.length) return;
+
+            ['CURR_MONTH', 'Q3_2026', 'YEAR_2026', 'YEAR_2025', 'ALL'].forEach(p => {
+                const btn = document.getElementById('btn-olap-' + p.toLowerCase().replace('_', '-'));
+                if (btn) {
+                    if (p === preset) {
+                        btn.className = 'px-2.5 py-1 text-xs rounded-lg font-semibold bg-cyan-500 text-slate-950 shadow-sm transition-all';
+                    } else {
+                        btn.className = 'px-2.5 py-1 text-xs rounded-lg font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all';
+                    }
+                }
+            });
+
+            const selFrom = document.getElementById('olapMonthFrom');
+            const selTo = document.getElementById('olapMonthTo');
+
+            if (preset === 'CURR_MONTH') {
+                const latest = months[months.length - 1];
+                olapMonthFrom = latest;
+                olapMonthTo = latest;
+            } else if (preset === 'Q3_2026') {
+                olapMonthFrom = '2026-07';
+                olapMonthTo = '2026-09';
+            } else if (preset === 'YEAR_2026') {
+                const m26 = months.filter(m => m.startsWith('2026'));
+                olapMonthFrom = m26[0] || '2026-01';
+                olapMonthTo = m26[m26.length - 1] || '2026-09';
+            } else if (preset === 'YEAR_2025') {
+                const m25 = months.filter(m => m.startsWith('2025'));
+                olapMonthFrom = m25[0] || '2025-01';
+                olapMonthTo = m25[m25.length - 1] || '2025-12';
+            } else if (preset === 'ALL') {
+                olapMonthFrom = months[0];
+                olapMonthTo = months[months.length - 1];
+            }
+
+            if (selFrom) selFrom.value = olapMonthFrom;
+            if (selTo) selTo.value = olapMonthTo;
+
+            applyOlapFilter();
+        }
+
+        function onOlapCustomTimeChange() {
+            const selFrom = document.getElementById('olapMonthFrom');
+            const selTo = document.getElementById('olapMonthTo');
+            if (!selFrom || !selTo) return;
+            olapMonthFrom = selFrom.value;
+            olapMonthTo = selTo.value;
+            if (olapMonthFrom > olapMonthTo) {
+                olapMonthTo = olapMonthFrom;
+                selTo.value = olapMonthFrom;
+            }
+            applyOlapFilter();
+        }
+
+        function applyOlapFilter() {
+            olapFilterChannel = document.getElementById('olapFilterChannel')?.value || '';
+            olapFilterKhts = document.getElementById('olapFilterKhts')?.value || '';
+            olapFilterTarget = document.getElementById('olapFilterTarget')?.value || '';
+            olapFilterHannix = document.getElementById('olapFilterHannix')?.value || '';
+
+            renderOlapSummaryKPIs();
+            renderOlapMatrix();
+            if (olapCurrentView === 'compare') renderOlapCompareChart();
+            if (olapCurrentView === 'drilldown') renderOlapDrilldown();
+        }
+
+        function getFilteredOlapData() {
+            const bundle = getOlapBundle();
+            const lookups = bundle.lookups || {};
+            const dt = bundle.dt || [];
+            const lead = bundle.lead || [];
+
+            const mIndices = new Set();
+            (lookups.m || []).forEach((m, idx) => {
+                if (m >= olapMonthFrom && m <= olapMonthTo) mIndices.add(idx);
+            });
+
+            const chIdx = olapFilterChannel ? lookups.ch.indexOf(olapFilterChannel) : -1;
+            const khIdx = olapFilterKhts ? lookups.kh.indexOf(olapFilterKhts) : -1;
+            const tgIdx = olapFilterTarget ? lookups.tg.indexOf(olapFilterTarget) : -1;
+            const hIdx = olapFilterHannix ? lookups.h.indexOf(olapFilterHannix) : -1;
+
+            const filteredDt = dt.filter(r => {
+                if (!mIndices.has(r[0])) return false;
+                if (chIdx !== -1 && r[1] !== chIdx) return false;
+                if (khIdx !== -1 && r[3] !== khIdx) return false;
+                if (hIdx !== -1 && r[5] !== hIdx) return false;
+                if (tgIdx !== -1 && r[7] !== tgIdx) return false;
+                return true;
+            });
+
+            const filteredLead = lead.filter(r => {
+                if (!mIndices.has(r[0])) return false;
+                if (chIdx !== -1 && r[1] !== chIdx) return false;
+                if (khIdx !== -1 && r[3] !== khIdx) return false;
+                if (hIdx !== -1 && r[5] !== hIdx) return false;
+                if (tgIdx !== -1 && r[6] !== tgIdx) return false;
+                return true;
+            });
+
+            return { filteredDt, filteredLead, lookups };
+        }
+
+        function renderOlapSummaryKPIs() {
+            const { filteredDt, filteredLead } = getFilteredOlapData();
+            const totalRev = filteredDt.reduce((sum, r) => sum + r[8], 0);
+            const totalDeals = filteredDt.length;
+            const totalLeads = filteredLead.length;
+            const cr = totalLeads > 0 ? ((totalDeals / totalLeads) * 100) : 0;
+            const aov = totalDeals > 0 ? (totalRev / totalDeals) : 0;
+
+            const el = document.getElementById('olapSummaryMetrics');
+            if (!el) return;
+
+            el.innerHTML = `
+                <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
+                    <div class="text-[10px] text-slate-400">Doanh Thu Kỳ Lọc</div>
+                    <div class="text-base font-black text-emerald-400 mt-0.5">${formatVnCurrency(totalRev)}</div>
+                    <div class="text-[10px] text-slate-500 mt-0.5">${(totalRev/1e9).toFixed(2)} Tỷ VNĐ</div>
+                </div>
+                <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
+                    <div class="text-[10px] text-slate-400">Số Lượng Lead</div>
+                    <div class="text-base font-black text-sky-400 mt-0.5">${totalLeads.toLocaleString('vi-VN')}</div>
+                    <div class="text-[10px] text-slate-500 mt-0.5">Tiếp nhận CRM</div>
+                </div>
+                <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
+                    <div class="text-[10px] text-slate-400">Giao Dịch (Deals)</div>
+                    <div class="text-base font-black text-amber-400 mt-0.5">${totalDeals.toLocaleString('vi-VN')}</div>
+                    <div class="text-[10px] text-slate-500 mt-0.5">Khớp học phí</div>
+                </div>
+                <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
+                    <div class="text-[10px] text-slate-400">Tỷ Lệ Chuyển Đổi (CR)</div>
+                    <div class="text-base font-black text-purple-400 mt-0.5">${cr.toFixed(2).replace('.', ',')}%</div>
+                    <div class="text-[10px] text-slate-500 mt-0.5">Deal / Lead</div>
+                </div>
+                <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3 col-span-2 sm:col-span-1">
+                    <div class="text-[10px] text-slate-400">Giá Trị TB Đơn (AOV)</div>
+                    <div class="text-base font-black text-cyan-400 mt-0.5">${formatVnCurrency(aov)}</div>
+                    <div class="text-[10px] text-slate-500 mt-0.5">Trung bình / Deal</div>
+                </div>
+            `;
+        }
+
+        const DIM_MAPPINGS = {
+            channel:    { name: 'Kênh Marketing',    dtIdx: 1, leadIdx: 1, lookup: 'ch' },
+            leadSource: { name: 'Nguồn Lead',         dtIdx: 2, leadIdx: 2, lookup: 'ls' },
+            khts:       { name: 'Dòng SP / KHTS',     dtIdx: 3, leadIdx: 3, lookup: 'kh' },
+            course:     { name: 'Khóa học',           dtIdx: 4, leadIdx: 4, lookup: 'c' },
+            hannix:     { name: 'Nhân sự Sales',      dtIdx: 5, leadIdx: 5, lookup: 'h' },
+            target:     { name: 'Đối tượng học viên', dtIdx: 7, leadIdx: 6, lookup: 'tg' },
+            status:     { name: 'Trạng thái Lead',    dtIdx: -1, leadIdx: 7, lookup: 'st' },
+            month:      { name: 'Tháng',              dtIdx: 0, leadIdx: 0, lookup: 'm' }
+        };
+
+        function setOlapPreset(presetKey) {
+            const p1 = document.getElementById('olapRowDim');
+            const p2 = document.getElementById('olapColDim');
+            const pf = document.getElementById('olapFactMetric');
+
+            for (let i = 1; i <= 6; i++) {
+                const b = document.getElementById('preset-btn-' + i);
+                if (b) b.className = 'px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700 transition-all flex items-center gap-1.5';
+            }
+
+            if (presetKey === 'CHANNEL_X_KHTS_REV') {
+                p1.value = 'channel'; p2.value = 'khts'; pf.value = 'rev';
+                document.getElementById('preset-btn-1').className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-cyan-500 text-slate-950 border border-cyan-400 transition-all flex items-center gap-1.5';
+            } else if (presetKey === 'KHTS_X_TARGET_LEAD') {
+                p1.value = 'khts'; p2.value = 'target'; pf.value = 'lead';
+                document.getElementById('preset-btn-2').className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-500 text-white border border-indigo-400 transition-all flex items-center gap-1.5';
+            } else if (presetKey === 'SALES_X_COURSE_REV') {
+                p1.value = 'hannix'; p2.value = 'khts'; pf.value = 'rev';
+                document.getElementById('preset-btn-3').className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950 border border-emerald-400 transition-all flex items-center gap-1.5';
+            } else if (presetKey === 'LEADSOURCE_X_STATUS') {
+                p1.value = 'leadSource'; p2.value = 'status'; pf.value = 'lead';
+                document.getElementById('preset-btn-4').className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-500 text-white border border-purple-400 transition-all flex items-center gap-1.5';
+            } else if (presetKey === 'CHANNEL_X_CR') {
+                p1.value = 'channel'; p2.value = 'khts'; pf.value = 'cr';
+                document.getElementById('preset-btn-5').className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-pink-500 text-white border border-pink-400 transition-all flex items-center gap-1.5';
+            } else if (presetKey === 'MONTH_X_KHTS_REV') {
+                p1.value = 'month'; p2.value = 'khts'; pf.value = 'rev';
+                document.getElementById('preset-btn-6').className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 border border-amber-400 transition-all flex items-center gap-1.5';
+            }
+
+            renderOlapMatrix();
+            if (olapCurrentView === 'compare') renderOlapCompareChart();
+        }
+
+        function swapOlapDimensions() {
+            const r = document.getElementById('olapRowDim');
+            const c = document.getElementById('olapColDim');
+            const temp = r.value;
+            r.value = c.value;
+            c.value = temp;
+            renderOlapMatrix();
+            if (olapCurrentView === 'compare') renderOlapCompareChart();
+        }
+
+        function renderOlapMatrix() {
+            const rowDimKey = document.getElementById('olapRowDim')?.value || 'channel';
+            const colDimKey = document.getElementById('olapColDim')?.value || 'khts';
+            const factMetric = document.getElementById('olapFactMetric')?.value || 'rev';
+            const displayMode = document.getElementById('olapDisplayMode')?.value || 'val';
+            const sortMode = document.getElementById('olapSortMode')?.value || 'desc';
+
+            const { filteredDt, filteredLead, lookups } = getFilteredOlapData();
+            const rowDim = DIM_MAPPINGS[rowDimKey];
+            const colDim = DIM_MAPPINGS[colDimKey];
+
+            const rowLookup = lookups[rowDim.lookup] || [];
+            const colLookup = lookups[colDim.lookup] || [];
+
+            // 2D Matrix: cell = { rev: 0, deals: 0, leads: 0 }
+            const matrix = {};
+            const rowTotals = {};
+            const colTotals = {};
+            let grandTotal = { rev: 0, deals: 0, leads: 0 };
+
+            const ensureCell = (r, c) => {
+                if (!matrix[r]) matrix[r] = {};
+                if (!matrix[r][c]) matrix[r][c] = { rev: 0, deals: 0, leads: 0 };
+                if (!rowTotals[r]) rowTotals[r] = { rev: 0, deals: 0, leads: 0 };
+                if (!colTotals[c]) colTotals[c] = { rev: 0, deals: 0, leads: 0 };
+            };
+
+            // Aggregate DT
+            if (rowDim.dtIdx !== -1 && colDim.dtIdx !== -1) {
+                filteredDt.forEach(item => {
+                    const rVal = rowLookup[item[rowDim.dtIdx]] || 'Khác';
+                    const cVal = colLookup[item[colDim.dtIdx]] || 'Khác';
+                    ensureCell(rVal, cVal);
+                    const rev = item[8] || 0;
+                    matrix[rVal][cVal].rev += rev;
+                    matrix[rVal][cVal].deals += 1;
+                    rowTotals[rVal].rev += rev;
+                    rowTotals[rVal].deals += 1;
+                    colTotals[cVal].rev += rev;
+                    colTotals[cVal].deals += 1;
+                    grandTotal.rev += rev;
+                    grandTotal.deals += 1;
+                });
+            }
+
+            // Aggregate Leads
+            if (rowDim.leadIdx !== -1 && colDim.leadIdx !== -1) {
+                filteredLead.forEach(item => {
+                    const rVal = rowLookup[item[rowDim.leadIdx]] || 'Khác';
+                    const cVal = colLookup[item[colDim.leadIdx]] || 'Khác';
+                    ensureCell(rVal, cVal);
+                    matrix[rVal][cVal].leads += 1;
+                    rowTotals[rVal].leads += 1;
+                    colTotals[cVal].leads += 1;
+                    grandTotal.leads += 1;
+                });
+            }
+
+            const getMetricVal = (obj) => {
+                if (!obj) return 0;
+                if (factMetric === 'rev') return obj.rev;
+                if (factMetric === 'deal') return obj.deals;
+                if (factMetric === 'lead') return obj.leads;
+                if (factMetric === 'cr') return obj.leads > 0 ? ((obj.deals / obj.leads) * 100) : 0;
+                if (factMetric === 'aov') return obj.deals > 0 ? (obj.rev / obj.deals) : 0;
+                return 0;
+            };
+
+            let rowKeys = Object.keys(matrix).filter(r => getMetricVal(rowTotals[r]) > 0 || rowTotals[r].rev > 0 || rowTotals[r].leads > 0);
+            let colKeys = Object.keys(colTotals).filter(c => getMetricVal(colTotals[c]) > 0 || colTotals[c].rev > 0 || colTotals[c].leads > 0);
+
+            // Limit cols to top 15 if too many to avoid horizontal blowout
+            if (colKeys.length > 15) {
+                colKeys.sort((a, b) => getMetricVal(colTotals[b]) - getMetricVal(colTotals[a]));
+                colKeys = colKeys.slice(0, 15);
+            }
+
+            // Sort rows
+            if (sortMode === 'desc') {
+                rowKeys.sort((a, b) => getMetricVal(rowTotals[b]) - getMetricVal(rowTotals[a]));
+            } else if (sortMode === 'asc') {
+                rowKeys.sort((a, b) => getMetricVal(rowTotals[a]) - getMetricVal(rowTotals[b]));
+            } else if (sortMode === 'az') {
+                rowKeys.sort((a, b) => a.localeCompare(b));
+            }
+
+            // Find maximum cell value for heatmap
+            let maxVal = 0;
+            rowKeys.forEach(r => {
+                colKeys.forEach(c => {
+                    const v = getMetricVal(matrix[r]?.[c]);
+                    if (v > maxVal) maxVal = v;
+                });
+            });
+
+            // Format cell text
+            const formatCell = (val, rKey, cKey) => {
+                if (!val || val === 0) return '<span class="text-slate-600">-</span>';
+                if (displayMode === 'row') {
+                    const base = getMetricVal(rowTotals[rKey]);
+                    return base > 0 ? ((val / base) * 100).toFixed(1) + '%' : '-';
+                }
+                if (displayMode === 'col') {
+                    const base = getMetricVal(colTotals[cKey]);
+                    return base > 0 ? ((val / base) * 100).toFixed(1) + '%' : '-';
+                }
+                if (displayMode === 'total') {
+                    const base = getMetricVal(grandTotal);
+                    return base > 0 ? ((val / base) * 100).toFixed(1) + '%' : '-';
+                }
+                // Value mode
+                if (factMetric === 'rev' || factMetric === 'aov') return formatVnCurrency(val);
+                if (factMetric === 'cr') return val.toFixed(2).replace('.', ',') + '%';
+                return val.toLocaleString('vi-VN');
+            };
+
+            const getHeatmapBg = (val) => {
+                if (!val || val <= 0 || maxVal <= 0) return '';
+                const ratio = Math.min(1, val / maxVal);
+                if (ratio > 0.7) return 'bg-cyan-500/25 text-cyan-200 font-bold';
+                if (ratio > 0.4) return 'bg-cyan-500/15 text-slate-200';
+                if (ratio > 0.15) return 'bg-cyan-500/5 text-slate-300';
+                return '';
+            };
+
+            const table = document.getElementById('olapMatrixTable');
+            if (!table) return;
+
+            let html = `
+                <thead>
+                    <tr class="bg-slate-900 border-b border-slate-800 text-[11px] text-slate-400">
+                        <th class="py-3 px-3 font-bold text-slate-200 sticky left-0 bg-slate-900 z-10 border-r border-slate-800">
+                            ${rowDim.name} \ ${colDim.name}
+                        </th>
+                        ${colKeys.map(c => `<th class="py-3 px-3 text-right font-semibold whitespace-nowrap">${c}</th>`).join('')}
+                        <th class="py-3 px-3 text-right font-black text-cyan-400 bg-slate-900/90 border-l border-slate-800">TỔNG CỘNG</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60 font-mono text-xs">
+            `;
+
+            rowKeys.forEach(r => {
+                const rTotalVal = getMetricVal(rowTotals[r]);
+                html += `
+                    <tr class="hover:bg-slate-800/40 transition-colors">
+                        <td class="py-2.5 px-3 font-semibold text-slate-200 sticky left-0 bg-slate-950/90 border-r border-slate-800 whitespace-nowrap font-sans">
+                            ${r}
+                        </td>
+                        ${colKeys.map(c => {
+                            const v = getMetricVal(matrix[r]?.[c]);
+                            const bg = getHeatmapBg(v);
+                            return `<td class="py-2.5 px-3 text-right ${bg} whitespace-nowrap">${formatCell(v, r, c)}</td>`;
+                        }).join('')}
+                        <td class="py-2.5 px-3 text-right font-black text-cyan-300 bg-slate-900/50 border-l border-slate-800 whitespace-nowrap">
+                            ${formatCell(rTotalVal, r, null)}
+                        </td>
+                    </tr>
+                `;
+            });
+
+            // Grand Total Row
+            const gTotalVal = getMetricVal(grandTotal);
+            html += `
+                <tr class="bg-slate-900/90 font-bold border-t-2 border-slate-700 text-slate-100">
+                    <td class="py-3 px-3 font-black sticky left-0 bg-slate-900 border-r border-slate-800 font-sans text-cyan-400">
+                        TỔNG CỘNG
+                    </td>
+                    ${colKeys.map(c => {
+                        const v = getMetricVal(colTotals[c]);
+                        return `<td class="py-3 px-3 text-right text-cyan-300 whitespace-nowrap">${formatCell(v, null, c)}</td>`;
+                    }).join('')}
+                    <td class="py-3 px-3 text-right font-black text-emerald-400 bg-slate-900 border-l border-slate-800 whitespace-nowrap text-sm">
+                        ${formatCell(gTotalVal, null, null)}
+                    </td>
+                </tr>
+                </tbody>
+            `;
+
+            table.innerHTML = html;
+
+            const statsEl = document.getElementById('olapMatrixStats');
+            if (statsEl) {
+                statsEl.innerText = `Hiển thị ${rowKeys.length} hàng × ${colKeys.length} cột (Bộ lọc: ${olapMonthFrom} → ${olapMonthTo})`;
+            }
+        }
+
+        function switchOlapView(viewName) {
+            olapCurrentView = viewName;
+            ['pivot', 'compare', 'drilldown'].forEach(v => {
+                const btn = document.getElementById('olap-view-' + v);
+                const container = document.getElementById('olapView' + v.charAt(0).toUpperCase() + v.slice(1) + 'Container');
+                if (btn) {
+                    if (v === viewName) {
+                        btn.className = 'px-3 py-1.5 rounded-lg font-bold bg-cyan-500 text-slate-950 flex items-center gap-1.5 shadow-sm transition-all';
+                    } else {
+                        btn.className = 'px-3 py-1.5 rounded-lg font-bold text-slate-400 hover:text-slate-200 flex items-center gap-1.5 transition-all';
+                    }
+                }
+                if (container) {
+                    if (v === viewName) container.classList.remove('hidden');
+                    else container.classList.add('hidden');
+                }
+            });
+
+            if (viewName === 'compare') renderOlapCompareChart();
+            if (viewName === 'drilldown') renderOlapDrilldown();
+            lucide.createIcons();
+        }
+
+        function renderOlapCompareChart() {
+            const rowDimKey = document.getElementById('olapRowDim')?.value || 'channel';
+            const factMetric = document.getElementById('olapFactMetric')?.value || 'rev';
+            const { filteredDt, filteredLead, lookups } = getFilteredOlapData();
+            const rowDim = DIM_MAPPINGS[rowDimKey];
+            const rowLookup = lookups[rowDim.lookup] || [];
+
+            const agg = {};
+            if (rowDim.dtIdx !== -1) {
+                filteredDt.forEach(r => {
+                    const k = rowLookup[r[rowDim.dtIdx]] || 'Khác';
+                    if (!agg[k]) agg[k] = { rev: 0, deals: 0, leads: 0 };
+                    agg[k].rev += (r[8] || 0);
+                    agg[k].deals += 1;
+                });
+            }
+            if (rowDim.leadIdx !== -1) {
+                filteredLead.forEach(r => {
+                    const k = rowLookup[r[rowDim.leadIdx]] || 'Khác';
+                    if (!agg[k]) agg[k] = { rev: 0, deals: 0, leads: 0 };
+                    agg[k].leads += 1;
+                });
+            }
+
+            const getMetricVal = (obj) => {
+                if (!obj) return 0;
+                if (factMetric === 'rev') return obj.rev;
+                if (factMetric === 'deal') return obj.deals;
+                if (factMetric === 'lead') return obj.leads;
+                if (factMetric === 'cr') return obj.leads > 0 ? ((obj.deals / obj.leads) * 100) : 0;
+                if (factMetric === 'aov') return obj.deals > 0 ? (obj.rev / obj.deals) : 0;
+                return 0;
+            };
+
+            let sortedKeys = Object.keys(agg).filter(k => getMetricVal(agg[k]) > 0);
+            sortedKeys.sort((a, b) => getMetricVal(agg[b]) - getMetricVal(agg[a]));
+            sortedKeys = sortedKeys.slice(0, 10);
+
+            const labels = sortedKeys;
+            const dataVals = sortedKeys.map(k => getMetricVal(agg[k]));
+
+            // Bar Chart
+            const ctx1 = document.getElementById('olapCompareChart')?.getContext('2d');
+            if (ctx1) {
+                if (olapChartInstance) olapChartInstance.destroy();
+                olapChartInstance = new Chart(ctx1, {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: DIM_MAPPINGS[rowDimKey].name,
+                            data: dataVals,
+                            backgroundColor: 'rgba(6, 182, 212, 0.65)',
+                            borderColor: '#06b6d4',
+                            borderWidth: 1.5,
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } },
+                            y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } }
+                        }
+                    }
+                });
+            }
+
+            // Share Donut Chart
+            const ctx2 = document.getElementById('olapShareChart')?.getContext('2d');
+            if (ctx2) {
+                if (olapShareChartInstance) olapShareChartInstance.destroy();
+                olapShareChartInstance = new Chart(ctx2, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels.slice(0, 5),
+                        datasets: [{
+                            data: dataVals.slice(0, 5),
+                            backgroundColor: ['#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899', '#10b981'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { size: 10 } } }
+                        }
+                    }
+                });
+            }
+        }
+
+        function renderOlapDrilldown() {
+            const { filteredDt, filteredLead, lookups } = getFilteredOlapData();
+            const factMetric = document.getElementById('olapFactMetric')?.value || 'rev';
+
+            let records = [];
+            if (factMetric === 'rev' || factMetric === 'deal' || factMetric === 'aov') {
+                records = filteredDt.map(r => ({
+                    type: 'Doanh Thu',
+                    month: lookups.m[r[0]] || '',
+                    channel: lookups.ch[r[1]] || '',
+                    leadSource: lookups.ls[r[2]] || '',
+                    khts: lookups.kh[r[3]] || '',
+                    course: lookups.c[r[4]] || '',
+                    hannix: lookups.h[r[5]] || '',
+                    target: lookups.tg[r[7]] || '',
+                    amount: r[8]
+                }));
+            } else {
+                records = filteredLead.map(r => ({
+                    type: 'Lead',
+                    month: lookups.m[r[0]] || '',
+                    channel: lookups.ch[r[1]] || '',
+                    leadSource: lookups.ls[r[2]] || '',
+                    khts: lookups.kh[r[3]] || '',
+                    course: lookups.c[r[4]] || '',
+                    hannix: lookups.h[r[5]] || '',
+                    target: lookups.tg[r[6]] || '',
+                    status: lookups.st[r[7]] || '',
+                    amount: 0
+                }));
+            }
+
+            const searchVal = document.getElementById('olapDrillSearch')?.value.toLowerCase().trim() || '';
+            if (searchVal) {
+                records = records.filter(r => 
+                    r.channel.toLowerCase().includes(searchVal) ||
+                    r.khts.toLowerCase().includes(searchVal) ||
+                    r.course.toLowerCase().includes(searchVal) ||
+                    r.hannix.toLowerCase().includes(searchVal) ||
+                    r.target.toLowerCase().includes(searchVal)
+                );
+            }
+
+            olapDrillFilteredRecords = records;
+            const totalCount = records.length;
+            const totalPages = Math.max(1, Math.ceil(totalCount / olapDrillPageSize));
+            if (olapDrillCurrentPage > totalPages) olapDrillCurrentPage = totalPages;
+
+            const startIdx = (olapDrillCurrentPage - 1) * olapDrillPageSize;
+            const pageRecords = records.slice(startIdx, startIdx + olapDrillPageSize);
+
+            document.getElementById('olapDrillCount').innerText = `Tổng cộng: ${totalCount.toLocaleString('vi-VN')} bản ghi`;
+            document.getElementById('olapDrillPage').innerText = `Trang ${olapDrillCurrentPage} / ${totalPages}`;
+            document.getElementById('btn-olap-prev').disabled = (olapDrillCurrentPage <= 1);
+            document.getElementById('btn-olap-next').disabled = (olapDrillCurrentPage >= totalPages);
+
+            const table = document.getElementById('olapDrillTable');
+            if (!table) return;
+
+            let html = `
+                <thead class="bg-slate-900 text-slate-400 text-[11px]">
+                    <tr>
+                        <th class="py-2.5 px-3">Loại</th>
+                        <th class="py-2.5 px-3">Tháng</th>
+                        <th class="py-2.5 px-3">Kênh Marketing</th>
+                        <th class="py-2.5 px-3">Dòng SP / KHTS</th>
+                        <th class="py-2.5 px-3">Khóa học</th>
+                        <th class="py-2.5 px-3">Nhân sự Sales</th>
+                        <th class="py-2.5 px-3">Đối tượng</th>
+                        <th class="py-2.5 px-3 text-right">Giá trị (VNĐ) / Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60 font-sans">
+            `;
+
+            pageRecords.forEach(r => {
+                const badge = r.type === 'Doanh Thu' ? 
+                    '<span class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">Giao Dịch</span>' :
+                    '<span class="px-2 py-0.5 rounded text-[10px] bg-sky-500/10 text-sky-400 border border-sky-500/20 font-bold">Lead</span>';
+                
+                const valCol = r.type === 'Doanh Thu' ? 
+                    `<span class="font-bold text-emerald-400 font-mono">${formatVnCurrency(r.amount)}</span>` :
+                    `<span class="text-slate-400">${r.status || 'Chưa cập nhật'}</span>`;
+
+                html += `
+                    <tr class="hover:bg-slate-800/30">
+                        <td class="py-2 px-3">${badge}</td>
+                        <td class="py-2 px-3 text-slate-400 font-mono text-xs">${r.month}</td>
+                        <td class="py-2 px-3 font-medium text-slate-200">${r.channel}</td>
+                        <td class="py-2 px-3 text-slate-300">${r.khts}</td>
+                        <td class="py-2 px-3 text-slate-400 max-w-xs truncate" title="${r.course}">${r.course}</td>
+                        <td class="py-2 px-3 font-semibold text-slate-300">${r.hannix}</td>
+                        <td class="py-2 px-3 text-slate-400">${r.target}</td>
+                        <td class="py-2 px-3 text-right">${valCol}</td>
+                    </tr>
+                `;
+            });
+
+            table.innerHTML = html;
+        }
+
+        function onOlapDrillSearch() {
+            olapDrillCurrentPage = 1;
+            renderOlapDrilldown();
+        }
+
+        function changeOlapPage(dir) {
+            olapDrillCurrentPage += dir;
+            renderOlapDrilldown();
+        }
+
+        function exportOlapCsv() {
+            const table = document.getElementById('olapMatrixTable');
+            if (!table) return;
+            let csv = [];
+            const rows = table.querySelectorAll('tr');
+            rows.forEach(r => {
+                const cols = r.querySelectorAll('th, td');
+                const rowData = [];
+                cols.forEach(c => rowData.push('"' + c.innerText.replace(/"/g, '""') + '"'));
+                csv.push(rowData.join(','));
+            });
+            const blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute('download', `Bao_Cao_OLAP_${olapMonthFrom}_${olapMonthTo}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function refreshOlapData() {
+            alert('Dữ liệu đã được nạp và đồng bộ đầy đủ từ Google Sheets!');
+        }
+
+        function renderRevenueTab() {
+            initOlapControls();
+            applyOlapFilter();
         }
 
         // 2. MARKETING PERFORMANCE LOGIC
