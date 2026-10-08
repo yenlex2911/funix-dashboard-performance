@@ -3276,9 +3276,12 @@
 
             const stMap = {};
             filteredDt.forEach(r => {
-                const sId = (lookups.id && r[11] !== undefined) ? lookups.id[r[11]] : ('d_' + r[0] + '_' + r[9]);
-                if (stMap[sId] === undefined || (r[10] || 0) > stMap[sId]) {
-                    stMap[sId] = (r[10] || 0);
+                const isCycleEligible = (r[8] === 0 || r[8] === 1); // New & Cross sell only
+                if (isCycleEligible) {
+                    const sId = (lookups.id && r[11] !== undefined) ? lookups.id[r[11]] : ('d_' + r[0] + '_' + r[9]);
+                    if (stMap[sId] === undefined || (r[10] || 0) > stMap[sId]) {
+                        stMap[sId] = (r[10] || 0);
+                    }
                 }
             });
             const uniqueStudents = Object.keys(stMap).length;
@@ -3419,26 +3422,28 @@
 
                     matrix[rVal][cVal].rev += rev;
                     matrix[rVal][cVal].deals += 1;
-                    if (matrix[rVal][cVal].studentMap[stId] === undefined || days > matrix[rVal][cVal].studentMap[stId]) {
-                        matrix[rVal][cVal].studentMap[stId] = days;
-                    }
-
                     rowTotals[rVal].rev += rev;
                     rowTotals[rVal].deals += 1;
-                    if (rowTotals[rVal].studentMap[stId] === undefined || days > rowTotals[rVal].studentMap[stId]) {
-                        rowTotals[rVal].studentMap[stId] = days;
-                    }
-
                     colTotals[cVal].rev += rev;
                     colTotals[cVal].deals += 1;
-                    if (colTotals[cVal].studentMap[stId] === undefined || days > colTotals[cVal].studentMap[stId]) {
-                        colTotals[cVal].studentMap[stId] = days;
-                    }
-
                     grandTotal.rev += rev;
                     grandTotal.deals += 1;
-                    if (grandTotal.studentMap[stId] === undefined || days > grandTotal.studentMap[stId]) {
-                        grandTotal.studentMap[stId] = days;
+
+                    // Chu kỳ bán hàng: CHỈ tính từ các giao dịch có Loại nhập học (rv) là 'New' (0) hoặc 'Cross sell' (1)
+                    const isCycleEligible = (item[8] === 0 || item[8] === 1);
+                    if (isCycleEligible) {
+                        if (matrix[rVal][cVal].studentMap[stId] === undefined || days > matrix[rVal][cVal].studentMap[stId]) {
+                            matrix[rVal][cVal].studentMap[stId] = days;
+                        }
+                        if (rowTotals[rVal].studentMap[stId] === undefined || days > rowTotals[rVal].studentMap[stId]) {
+                            rowTotals[rVal].studentMap[stId] = days;
+                        }
+                        if (colTotals[cVal].studentMap[stId] === undefined || days > colTotals[cVal].studentMap[stId]) {
+                            colTotals[cVal].studentMap[stId] = days;
+                        }
+                        if (grandTotal.studentMap[stId] === undefined || days > grandTotal.studentMap[stId]) {
+                            grandTotal.studentMap[stId] = days;
+                        }
                     }
                 });
             }
@@ -3731,6 +3736,8 @@
                     hannix: lookups.h[r[6]] || '',
                     studentId: (lookups.id && r[11] !== undefined) ? lookups.id[r[11]] : '',
                     matchDate: (lookups.date && r[12] !== undefined) ? lookups.date[r[12]] : '',
+                    rv: (lookups.rv && r[8] !== undefined) ? lookups.rv[r[8]] : '',
+                    isCycleEligible: (r[8] === 0 || r[8] === 1),
                     days: r[10] || 0,
                     amount: r[9]
                 }));
@@ -3818,7 +3825,7 @@
                         <td class="py-2 px-3 font-bold text-cyan-300">${r.dongSp}</td>
                         <td class="py-2 px-3 text-slate-300 max-w-xs truncate" title="${r.course}">${r.course}</td>
                         <td class="py-2 px-3 text-slate-400">${r.mid}</td>
-                        <td class="py-2 px-3 text-amber-400 font-mono text-xs font-bold">${r.type === 'Doanh Thu' ? (r.days + ' ngày') : '-'}</td>
+                        <td class="py-2 px-3 font-mono text-xs">${r.type === 'Doanh Thu' ? (r.isCycleEligible ? `<span class="text-amber-400 font-bold">${r.days} ngày</span>` : `<span class="text-slate-500">${r.days}d (${r.rv})</span>`) : '-'}</td>
                         <td class="py-2 px-3 font-semibold text-slate-300">${r.hannix}</td>
                         <td class="py-2 px-3 text-right">${valCol}</td>
                     </tr>
