@@ -335,7 +335,7 @@
                         <span class="w-2.5 h-2.5 rounded-full bg-indigo-400 shadow-[0_0_8px_#818cf8]"></span>
                         <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider">Chiều DIMENSION (Cắt Lát / Phân Nhóm)</span>
                     </div>
-                    <span class="text-[10px] text-slate-400">8 Chiều phân tích</span>
+                    <span class="text-[10px] text-slate-400">10 Chiều phân tích</span>
                 </div>
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
                     <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800">
@@ -362,6 +362,14 @@
                     <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800">
                         <div class="font-bold text-indigo-300">💼 Sales & Phòng</div>
                         <div class="text-[10px] text-slate-400 mt-0.5">Hannix, Phòng kinh doanh</div>
+                    </div>
+                    <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800">
+                        <div class="font-bold text-indigo-300">📆 Ngày khớp GD</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5">Ngày phát sinh học phí</div>
+                    </div>
+                    <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800">
+                        <div class="font-bold text-indigo-300">🆔 Mã nhập học</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5">Mã học viên (Doanh thu)</div>
                     </div>
                     <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800">
                         <div class="font-bold text-indigo-300">🎯 Đối tượng</div>
@@ -520,6 +528,8 @@
                     <option value="course">Khóa học (Cột P)</option>
                     <option value="mid">MID (Người chạy QC)</option>
                     <option value="hannix">Nhân sự Sales (Hannix)</option>
+                    <option value="matchDate">Ngày khớp GD</option>
+                    <option value="studentId">Mã nhập học</option>
                     <option value="target">Đối tượng khách hàng</option>
                     <option value="leadSource">Nguồn Lead (MKT/Seeding...)</option>
                     <option value="status">Trạng thái Lead (Phễu)</option>
@@ -542,6 +552,8 @@
                     <option value="mid">MID (Người chạy QC)</option>
                     <option value="channel">Kênh Marketing (Nguồn TT)</option>
                     <option value="hannix">Nhân sự Sales (Hannix)</option>
+                    <option value="matchDate">Ngày khớp GD</option>
+                    <option value="studentId">Mã nhập học</option>
                     <option value="target">Đối tượng khách hàng</option>
                     <option value="leadSource">Nguồn Lead (MKT/Seeding...)</option>
                     <option value="status">Trạng thái Lead (Phễu)</option>
@@ -3255,14 +3267,23 @@
         }
 
         function renderOlapSummaryKPIs() {
-            const { filteredDt, filteredLead } = getFilteredOlapData();
+            const { filteredDt, filteredLead, lookups } = getFilteredOlapData();
             const totalRev = filteredDt.reduce((sum, r) => sum + r[9], 0);
             const totalDeals = filteredDt.length;
             const totalLeads = filteredLead.length;
             const cr = totalLeads > 0 ? ((totalDeals / totalLeads) * 100) : 0;
             const aov = totalDeals > 0 ? (totalRev / totalDeals) : 0;
-            const totalCycleDays = filteredDt.reduce((sum, r) => sum + r[10], 0);
-            const avgCycle = totalDeals > 0 ? (totalCycleDays / totalDeals) : 0;
+
+            const stMap = {};
+            filteredDt.forEach(r => {
+                const sId = (lookups.id && r[11] !== undefined) ? lookups.id[r[11]] : ('d_' + r[0] + '_' + r[9]);
+                if (stMap[sId] === undefined || (r[10] || 0) > stMap[sId]) {
+                    stMap[sId] = (r[10] || 0);
+                }
+            });
+            const uniqueStudents = Object.keys(stMap).length;
+            const totalCycleDays = Object.values(stMap).reduce((a, b) => a + b, 0);
+            const avgCycle = uniqueStudents > 0 ? (totalCycleDays / uniqueStudents) : 0;
 
             const el = document.getElementById('olapSummaryMetrics');
             if (!el) return;
@@ -3291,7 +3312,7 @@
                 <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
                     <div class="text-[10px] text-slate-400">Chu Kỳ Bán Hàng TB</div>
                     <div class="text-base font-black text-amber-300 mt-0.5">${avgCycle > 0 ? avgCycle.toFixed(1).replace('.', ',') + ' Ngày' : '-'}</div>
-                    <div class="text-[10px] text-slate-500 mt-0.5">Từ Lead → Khớp GD</div>
+                    <div class="text-[10px] text-slate-400 mt-0.5 font-mono">${totalCycleDays.toLocaleString('vi-VN')}d / ${uniqueStudents.toLocaleString('vi-VN')} HV</div>
                 </div>
                 <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3 col-span-2 sm:col-span-1">
                     <div class="text-[10px] text-slate-400">Giá Trị TB Đơn (AOV)</div>
@@ -3302,15 +3323,17 @@
         }
 
         const DIM_MAPPINGS = {
-            channel:    { name: 'Kênh Marketing',      dtIdx: 1, leadIdx: 1, lookup: 'ch' },
-            dongSp:     { name: 'Dòng SP',             dtIdx: 3, leadIdx: 3, lookup: 'dsp' },
-            course:     { name: 'Khóa học',            dtIdx: 4, leadIdx: 4, lookup: 'c' },
-            mid:        { name: 'MID (Người chạy QC)', dtIdx: 5, leadIdx: 5, lookup: 'mid' },
-            hannix:     { name: 'Nhân sự Sales',       dtIdx: 6, leadIdx: 6, lookup: 'h' },
-            target:     { name: 'Đối tượng học viên',  dtIdx: 7, leadIdx: 7, lookup: 'tg' },
-            leadSource: { name: 'Nguồn Lead',          dtIdx: 2, leadIdx: 2, lookup: 'ls' },
-            status:     { name: 'Trạng thái Lead',     dtIdx: -1, leadIdx: 8, lookup: 'st' },
-            month:      { name: 'Tháng',               dtIdx: 0, leadIdx: 0, lookup: 'm' }
+            channel:    { name: 'Kênh Marketing',      dtIdx: 1,  leadIdx: 1,  lookup: 'ch' },
+            dongSp:     { name: 'Dòng SP',             dtIdx: 3,  leadIdx: 3,  lookup: 'dsp' },
+            course:     { name: 'Khóa học',            dtIdx: 4,  leadIdx: 4,  lookup: 'c' },
+            mid:        { name: 'MID (Người chạy QC)', dtIdx: 5,  leadIdx: 5,  lookup: 'mid' },
+            hannix:     { name: 'Nhân sự Sales',       dtIdx: 6,  leadIdx: 6,  lookup: 'h' },
+            matchDate:  { name: 'Ngày khớp GD',        dtIdx: 12, leadIdx: -1, lookup: 'date' },
+            studentId:  { name: 'Mã nhập học',         dtIdx: 11, leadIdx: -1, lookup: 'id' },
+            target:     { name: 'Đối tượng học viên',  dtIdx: 7,  leadIdx: 7,  lookup: 'tg' },
+            leadSource: { name: 'Nguồn Lead',          dtIdx: 2,  leadIdx: 2,  lookup: 'ls' },
+            status:     { name: 'Trạng thái Lead',     dtIdx: -1, leadIdx: 8,  lookup: 'st' },
+            month:      { name: 'Tháng',               dtIdx: 0,  leadIdx: 0,  lookup: 'm' }
         };
 
         function setOlapPreset(presetKey) {
@@ -3371,20 +3394,20 @@
             const rowLookup = lookups[rowDim.lookup] || [];
             const colLookup = lookups[colDim.lookup] || [];
 
-            // 2D Matrix: cell = { rev: 0, deals: 0, leads: 0, cycleDays: 0 }
+            // 2D Matrix: cell = { rev: 0, deals: 0, leads: 0, studentMap: {} }
             const matrix = {};
             const rowTotals = {};
             const colTotals = {};
-            let grandTotal = { rev: 0, deals: 0, leads: 0, cycleDays: 0 };
+            let grandTotal = { rev: 0, deals: 0, leads: 0, studentMap: {} };
 
             const ensureCell = (r, c) => {
                 if (!matrix[r]) matrix[r] = {};
-                if (!matrix[r][c]) matrix[r][c] = { rev: 0, deals: 0, leads: 0, cycleDays: 0 };
-                if (!rowTotals[r]) rowTotals[r] = { rev: 0, deals: 0, leads: 0, cycleDays: 0 };
-                if (!colTotals[c]) colTotals[c] = { rev: 0, deals: 0, leads: 0, cycleDays: 0 };
+                if (!matrix[r][c]) matrix[r][c] = { rev: 0, deals: 0, leads: 0, studentMap: {} };
+                if (!rowTotals[r]) rowTotals[r] = { rev: 0, deals: 0, leads: 0, studentMap: {} };
+                if (!colTotals[c]) colTotals[c] = { rev: 0, deals: 0, leads: 0, studentMap: {} };
             };
 
-            // Aggregate DT: [m, ch, ls, dsp, c, mid, h, tg, cy, rev, days]
+            // Aggregate DT: [m, ch, ls, dsp, c, mid, h, tg, cy, rev, days, id, date]
             if (rowDim.dtIdx !== -1 && colDim.dtIdx !== -1) {
                 filteredDt.forEach(item => {
                     const rVal = rowLookup[item[rowDim.dtIdx]] || 'Khác';
@@ -3392,18 +3415,31 @@
                     ensureCell(rVal, cVal);
                     const rev = item[9] || 0;
                     const days = item[10] || 0;
+                    const stId = (lookups.id && item[11] !== undefined) ? lookups.id[item[11]] : ('d_' + item[0] + '_' + rev);
+
                     matrix[rVal][cVal].rev += rev;
                     matrix[rVal][cVal].deals += 1;
-                    matrix[rVal][cVal].cycleDays += days;
+                    if (matrix[rVal][cVal].studentMap[stId] === undefined || days > matrix[rVal][cVal].studentMap[stId]) {
+                        matrix[rVal][cVal].studentMap[stId] = days;
+                    }
+
                     rowTotals[rVal].rev += rev;
                     rowTotals[rVal].deals += 1;
-                    rowTotals[rVal].cycleDays += days;
+                    if (rowTotals[rVal].studentMap[stId] === undefined || days > rowTotals[rVal].studentMap[stId]) {
+                        rowTotals[rVal].studentMap[stId] = days;
+                    }
+
                     colTotals[cVal].rev += rev;
                     colTotals[cVal].deals += 1;
-                    colTotals[cVal].cycleDays += days;
+                    if (colTotals[cVal].studentMap[stId] === undefined || days > colTotals[cVal].studentMap[stId]) {
+                        colTotals[cVal].studentMap[stId] = days;
+                    }
+
                     grandTotal.rev += rev;
                     grandTotal.deals += 1;
-                    grandTotal.cycleDays += days;
+                    if (grandTotal.studentMap[stId] === undefined || days > grandTotal.studentMap[stId]) {
+                        grandTotal.studentMap[stId] = days;
+                    }
                 });
             }
 
@@ -3426,7 +3462,13 @@
                 if (factMetric === 'deal') return obj.deals;
                 if (factMetric === 'lead') return obj.leads;
                 if (factMetric === 'cr') return obj.leads > 0 ? ((obj.deals / obj.leads) * 100) : 0;
-                if (factMetric === 'cycleAvg') return obj.deals > 0 ? (obj.cycleDays / obj.deals) : null;
+                if (factMetric === 'cycleAvg') {
+                    const stMap = obj.studentMap || {};
+                    const stKeys = Object.keys(stMap);
+                    if (stKeys.length === 0) return null;
+                    const totDays = stKeys.reduce((sum, k) => sum + (stMap[k] || 0), 0);
+                    return totDays / stKeys.length;
+                }
                 if (factMetric === 'aov') return obj.deals > 0 ? (obj.rev / obj.deals) : 0;
                 return 0;
             };
@@ -3436,15 +3478,15 @@
 
             // Limit cols if too many
             if (colKeys.length > 15) {
-                colKeys.sort((a, b) => getMetricVal(colTotals[b]) - getMetricVal(colTotals[a]));
+                colKeys.sort((a, b) => (getMetricVal(colTotals[b]) || 0) - (getMetricVal(colTotals[a]) || 0));
                 colKeys = colKeys.slice(0, 15);
             }
 
             // Sort rows
             if (sortMode === 'desc') {
-                rowKeys.sort((a, b) => getMetricVal(rowTotals[b]) - getMetricVal(rowTotals[a]));
+                rowKeys.sort((a, b) => (getMetricVal(rowTotals[b]) || 0) - (getMetricVal(rowTotals[a]) || 0));
             } else if (sortMode === 'asc') {
-                rowKeys.sort((a, b) => getMetricVal(rowTotals[a]) - getMetricVal(rowTotals[b]));
+                rowKeys.sort((a, b) => (getMetricVal(rowTotals[a]) || 0) - (getMetricVal(rowTotals[b]) || 0));
             } else if (sortMode === 'az') {
                 rowKeys.sort((a, b) => a.localeCompare(b));
             }
@@ -3453,11 +3495,11 @@
             rowKeys.forEach(r => {
                 colKeys.forEach(c => {
                     const v = getMetricVal(matrix[r]?.[c]);
-                    if (v > maxVal) maxVal = v;
+                    if (v !== null && v > maxVal) maxVal = v;
                 });
             });
 
-            const formatCell = (val, rKey, cKey) => {
+            const formatCell = (val, rKey, cKey, cellObj) => {
                 if (val === null || val === undefined) return '<span class="text-slate-600">-</span>';
                 if (displayMode === 'row') {
                     const base = getMetricVal(rowTotals[rKey]);
@@ -3475,7 +3517,13 @@
                 if (factMetric === 'cr') return val.toFixed(2).replace('.', ',') + '%';
                 if (factMetric === 'cycleAvg') {
                     const rounded = Math.round(val * 10) / 10;
-                    return (Number.isInteger(rounded) ? rounded : rounded.toFixed(1).replace('.', ',')) + ' ngày';
+                    const valStr = (Number.isInteger(rounded) ? rounded : rounded.toFixed(1).replace('.', ',')) + ' ngày';
+                    if (cellObj && cellObj.studentMap) {
+                        const sCount = Object.keys(cellObj.studentMap).length;
+                        const totDays = Object.values(cellObj.studentMap).reduce((a, b) => a + b, 0);
+                        return `<div><span class="font-bold text-amber-300">${valStr}</span><span class="block text-[10px] text-slate-400 font-normal">(${totDays.toLocaleString('vi-VN')}d / ${sCount} HV)</span></div>`;
+                    }
+                    return valStr;
                 }
                 return val.toLocaleString('vi-VN');
             };
@@ -3515,10 +3563,10 @@
                         ${colKeys.map(c => {
                             const v = getMetricVal(matrix[r]?.[c]);
                             const bg = getHeatmapBg(v);
-                            return `<td class="py-2.5 px-3 text-right ${bg} whitespace-nowrap">${formatCell(v, r, c)}</td>`;
+                            return `<td class="py-2.5 px-3 text-right ${bg} whitespace-nowrap">${formatCell(v, r, c, matrix[r]?.[c])}</td>`;
                         }).join('')}
                         <td class="py-2.5 px-3 text-right font-black text-cyan-300 bg-slate-900/50 border-l border-slate-800 whitespace-nowrap">
-                            ${formatCell(rTotalVal, r, null)}
+                            ${formatCell(rTotalVal, r, null, rowTotals[r])}
                         </td>
                     </tr>
                 `;
@@ -3532,10 +3580,10 @@
                     </td>
                     ${colKeys.map(c => {
                         const v = getMetricVal(colTotals[c]);
-                        return `<td class="py-3 px-3 text-right text-cyan-300 whitespace-nowrap">${formatCell(v, null, c)}</td>`;
+                        return `<td class="py-3 px-3 text-right text-cyan-300 whitespace-nowrap">${formatCell(v, null, c, colTotals[c])}</td>`;
                     }).join('')}
                     <td class="py-3 px-3 text-right font-black text-emerald-400 bg-slate-900 border-l border-slate-800 whitespace-nowrap text-sm">
-                        ${formatCell(gTotalVal, null, null)}
+                        ${formatCell(gTotalVal, null, null, grandTotal)}
                     </td>
                 </tr>
                 </tbody>
@@ -3681,7 +3729,8 @@
                     course: lookups.c[r[4]] || '',
                     mid: lookups.mid[r[5]] || '',
                     hannix: lookups.h[r[6]] || '',
-                    cycle: lookups.cy[r[8]] || '',
+                    studentId: (lookups.id && r[11] !== undefined) ? lookups.id[r[11]] : '',
+                    matchDate: (lookups.date && r[12] !== undefined) ? lookups.date[r[12]] : '',
                     days: r[10] || 0,
                     amount: r[9]
                 }));
@@ -3694,7 +3743,8 @@
                     course: lookups.c[r[4]] || '',
                     mid: lookups.mid[r[5]] || '',
                     hannix: lookups.h[r[6]] || '',
-                    cycle: '-',
+                    studentId: '-',
+                    matchDate: '-',
                     days: 0,
                     status: lookups.st[r[8]] || '',
                     amount: 0
@@ -3708,7 +3758,9 @@
                     r.dongSp.toLowerCase().includes(searchVal) ||
                     r.course.toLowerCase().includes(searchVal) ||
                     r.mid.toLowerCase().includes(searchVal) ||
-                    r.hannix.toLowerCase().includes(searchVal)
+                    r.hannix.toLowerCase().includes(searchVal) ||
+                    (r.studentId && r.studentId.toLowerCase().includes(searchVal)) ||
+                    (r.matchDate && r.matchDate.toLowerCase().includes(searchVal))
                 );
             }
 
@@ -3732,14 +3784,16 @@
                 <thead class="bg-slate-900 text-slate-400 text-[11px]">
                     <tr>
                         <th class="py-2.5 px-3">Loại</th>
+                        <th class="py-2.5 px-3">Mã NH</th>
+                        <th class="py-2.5 px-3">Ngày khớp GD</th>
                         <th class="py-2.5 px-3">Tháng</th>
                         <th class="py-2.5 px-3">Kênh MKT</th>
                         <th class="py-2.5 px-3">Dòng SP</th>
-                        <th class="py-2.5 px-3">Khóa học (Loại KHTS)</th>
-                        <th class="py-2.5 px-3">MID (QC)</th>
-                        <th class="py-2.5 px-3">Chu kỳ bán hàng</th>
+                        <th class="py-2.5 px-3">Khóa học</th>
+                        <th class="py-2.5 px-3">MID</th>
+                        <th class="py-2.5 px-3">Chu kỳ</th>
                         <th class="py-2.5 px-3">Sales</th>
-                        <th class="py-2.5 px-3 text-right">Giá trị (VNĐ) / Trạng thái</th>
+                        <th class="py-2.5 px-3 text-right">Giá trị / Trạng thái</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-800/60 font-sans">
@@ -3757,12 +3811,14 @@
                 html += `
                     <tr class="hover:bg-slate-800/30">
                         <td class="py-2 px-3">${badge}</td>
+                        <td class="py-2 px-3 font-bold text-amber-300 font-mono text-xs">${r.studentId || '-'}</td>
+                        <td class="py-2 px-3 text-slate-300 font-mono text-xs">${r.matchDate || '-'}</td>
                         <td class="py-2 px-3 text-slate-400 font-mono text-xs">${r.month}</td>
                         <td class="py-2 px-3 font-medium text-slate-200">${r.channel}</td>
                         <td class="py-2 px-3 font-bold text-cyan-300">${r.dongSp}</td>
                         <td class="py-2 px-3 text-slate-300 max-w-xs truncate" title="${r.course}">${r.course}</td>
                         <td class="py-2 px-3 text-slate-400">${r.mid}</td>
-                        <td class="py-2 px-3 text-slate-300 font-mono text-xs">${r.type === 'Doanh Thu' ? (r.days + ' ngày') : '-'}</td>
+                        <td class="py-2 px-3 text-amber-400 font-mono text-xs font-bold">${r.type === 'Doanh Thu' ? (r.days + ' ngày') : '-'}</td>
                         <td class="py-2 px-3 font-semibold text-slate-300">${r.hannix}</td>
                         <td class="py-2 px-3 text-right">${valCol}</td>
                     </tr>
