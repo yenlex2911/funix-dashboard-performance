@@ -256,7 +256,7 @@
                         <h2 class="text-base font-black text-slate-100 tracking-wide uppercase">Mô Hình Dữ Liệu Phân Tích Đa Chiều (OLAP Star Schema)</h2>
                         <span class="px-2 py-0.5 rounded-full text-[10px] bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30">Hợp Nhất 2 Nguồn</span>
                     </div>
-                    <p class="text-xs text-slate-400 mt-0.5">Phân tích đa chiều theo mô hình Fact - Dimension: Nguồn dữ liệu hợp nhất từ Sheet <span class="text-sky-300 font-medium">Raw Lead (27.988 leads)</span> và Sheet <span class="text-emerald-300 font-medium">Doanh thu (3.417 giao dịch)</span></p>
+                    <p class="text-xs text-slate-400 mt-0.5">Phân tích đa chiều theo mô hình Fact - Dimension: Nguồn dữ liệu hợp nhất từ Sheet <span class="text-sky-300 font-medium">Raw Lead (27.988 leads)</span> và Sheet <span class="text-emerald-300 font-medium">Doanh thu (3.417 học viên L6.1)</span></p>
                 </div>
             </div>
             <div class="flex items-center gap-2">
@@ -300,15 +300,15 @@
                     <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800 flex items-start gap-2">
                         <i data-lucide="check-circle-2" class="w-4 h-4 text-amber-400 shrink-0 mt-0.5"></i>
                         <div>
-                            <div class="font-bold text-slate-200">Số giao dịch (Deals)</div>
-                            <div class="text-[10px] text-slate-400">Số đơn khớp học phí phát sinh</div>
+                            <div class="font-bold text-slate-200">Số học viên (L6.1)</div>
+                            <div class="text-[10px] text-slate-400">Số học viên khớp học phí phát sinh</div>
                         </div>
                     </div>
                     <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800 flex items-start gap-2">
                         <i data-lucide="percent" class="w-4 h-4 text-purple-400 shrink-0 mt-0.5"></i>
                         <div>
                             <div class="font-bold text-slate-200">Tỷ lệ chuyển đổi (CR)</div>
-                            <div class="text-[10px] text-slate-400">Tỷ lệ chốt = Deals / Lead (%)</div>
+                            <div class="text-[10px] text-slate-400">Tỷ lệ chốt = L6.1 / Lead (%)</div>
                         </div>
                     </div>
                     <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800 flex items-start gap-2">
@@ -321,8 +321,8 @@
                     <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800 flex items-start gap-2">
                         <i data-lucide="calculator" class="w-4 h-4 text-cyan-400 shrink-0 mt-0.5"></i>
                         <div>
-                            <div class="font-bold text-slate-200">Giá trị TB đơn (AOV)</div>
-                            <div class="text-[10px] text-slate-400">Doanh thu bình quân / Giao dịch</div>
+                            <div class="font-bold text-slate-200">ARPU</div>
+                            <div class="text-[10px] text-slate-400">Doanh thu bình quân / Học viên (L6.1)</div>
                         </div>
                     </div>
                 </div>
@@ -566,10 +566,10 @@
                 <select id="olapFactMetric" onchange="renderOlapMatrix()" class="w-full bg-slate-900 border border-cyan-500/40 text-cyan-300 font-semibold rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none">
                     <option value="rev">Doanh thu (VNĐ)</option>
                     <option value="lead">Số lượng Lead</option>
-                    <option value="deal">Số giao dịch (Deals)</option>
+                    <option value="deal">Số học viên (L6.1)</option>
                     <option value="cr">Tỷ lệ chuyển đổi (%)</option>
                     <option value="cycleAvg">Chu kỳ bán hàng TB (Số ngày / Học viên)</option>
-                    <option value="aov">Giá trị TB đơn (AOV)</option>
+                    <option value="aov">ARPU</option>
                 </select>
             </div>
 
@@ -3303,14 +3303,14 @@
                     <div class="text-[10px] text-slate-500 mt-0.5">Tiếp nhận CRM</div>
                 </div>
                 <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
-                    <div class="text-[10px] text-slate-400">Giao Dịch (Deals)</div>
+                    <div class="text-[10px] text-slate-400">Số Học Viên (L6.1)</div>
                     <div class="text-base font-black text-amber-400 mt-0.5">${totalDeals.toLocaleString('vi-VN')}</div>
                     <div class="text-[10px] text-slate-500 mt-0.5">Khớp học phí</div>
                 </div>
                 <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
                     <div class="text-[10px] text-slate-400">Tỷ Lệ Chuyển Đổi (CR)</div>
                     <div class="text-base font-black text-purple-400 mt-0.5">${cr.toFixed(2).replace('.', ',')}%</div>
-                    <div class="text-[10px] text-slate-500 mt-0.5">Deal / Lead</div>
+                    <div class="text-[10px] text-slate-500 mt-0.5">L6.1 / Lead</div>
                 </div>
                 <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
                     <div class="text-[10px] text-slate-400">Chu Kỳ Bán Hàng TB</div>
@@ -3318,9 +3318,9 @@
                     <div class="text-[10px] text-slate-400 mt-0.5 font-mono">${totalCycleDays.toLocaleString('vi-VN')}d / ${uniqueStudents.toLocaleString('vi-VN')} HV</div>
                 </div>
                 <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3 col-span-2 sm:col-span-1">
-                    <div class="text-[10px] text-slate-400">Giá Trị TB Đơn (AOV)</div>
+                    <div class="text-[10px] text-slate-400">ARPU</div>
                     <div class="text-base font-black text-cyan-400 mt-0.5">${formatVnCurrency(aov)}</div>
-                    <div class="text-[10px] text-slate-500 mt-0.5">Trung bình / Deal</div>
+                    <div class="text-[10px] text-slate-500 mt-0.5">Trung bình / Học viên</div>
                 </div>
             `;
         }
@@ -3823,7 +3823,7 @@
 
             pageRecords.forEach(r => {
                 const badge = r.type === 'Doanh Thu' ? 
-                    '<span class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">Giao Dịch</span>' :
+                    '<span class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">Học Viên (L6.1)</span>' :
                     '<span class="px-2 py-0.5 rounded text-[10px] bg-sky-500/10 text-sky-400 border border-sky-500/20 font-bold">Lead</span>';
                 
                 const valCol = r.type === 'Doanh Thu' ? 
