@@ -3110,7 +3110,29 @@
         let _olapInitialized = false;
 
         function getOlapBundle() {
-            return window.OLAP_BUNDLE || { lookups: { m:[], ch:[], ls:[], dsp:[], c:[], mid:[], h:[], tg:[], st:[], cy:[] }, dt: [], lead: [] };
+            const bundle = window.OLAP_BUNDLE || { lookups: { m:[], ch:[], ls:[], dsp:[], c:[], mid:[], h:[], tg:[], st:[], cy:[] }, dt: [], lead: [] };
+            if (!bundle._p1BrandingFixed && bundle.lookups && bundle.lookups.c) {
+                const brandingCourseIdx = bundle.lookups.c.indexOf('Branding - IT - HocTrucTuyen');
+                if (brandingCourseIdx !== -1) {
+                    let brandingDspIdx = bundle.lookups.dsp.indexOf('Branding IT');
+                    if (brandingDspIdx === -1) {
+                        bundle.lookups.dsp.push('Branding IT');
+                        brandingDspIdx = bundle.lookups.dsp.length - 1;
+                    }
+                    if (bundle.lead) {
+                        bundle.lead.forEach(r => {
+                            if (r[4] === brandingCourseIdx && r[3] === 1) r[3] = brandingDspIdx;
+                        });
+                    }
+                    if (bundle.dt) {
+                        bundle.dt.forEach(r => {
+                            if (r[4] === brandingCourseIdx && r[3] === 1) r[3] = brandingDspIdx;
+                        });
+                    }
+                }
+                bundle._p1BrandingFixed = true;
+            }
+            return bundle;
         }
 
         function initOlapControls() {
