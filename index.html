@@ -3266,13 +3266,29 @@
             return { filteredDt, filteredLead, lookups };
         }
 
+        function isExcludedFromArpuCr(r, lookups) {
+            if (!r || !lookups) return false;
+            const rvName = (lookups.rv && r[8] !== undefined && lookups.rv[r[8]]) ? lookups.rv[r[8]].toLowerCase() : '';
+            if (rvName.includes('refund')) return true;
+            const cName = (lookups.c && r[4] !== undefined && lookups.c[r[4]]) ? lookups.c[r[4]].toLowerCase() : '';
+            if (cName.includes('branding')) return true;
+            return false;
+        }
+
         function renderOlapSummaryKPIs() {
             const { filteredDt, filteredLead, lookups } = getFilteredOlapData();
+            // Tổng doanh thu: Tính toàn bộ các dòng doanh thu (bao gồm cả Branding IT và Refund)
             const totalRev = filteredDt.reduce((sum, r) => sum + r[9], 0);
-            const totalDeals = filteredDt.length;
+
+            // Dữ liệu hợp lệ cho ARPU, CR và Số học viên (L6.1):
+            // Loại trừ Loại KHTS Branding IT và Loại nhập học là Refund
+            const validDt = filteredDt.filter(r => !isExcludedFromArpuCr(r, lookups));
+            const validRev = validDt.reduce((sum, r) => sum + r[9], 0);
+            const totalDeals = validDt.length;
+
             const totalLeads = filteredLead.length;
             const cr = totalLeads > 0 ? ((totalDeals / totalLeads) * 100) : 0;
-            const aov = totalDeals > 0 ? (totalRev / totalDeals) : 0;
+            const aov = totalDeals > 0 ? (validRev / totalDeals) : 0;
 
             const stMap = {};
             filteredDt.forEach(r => {
@@ -3305,7 +3321,7 @@
                 <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
                     <div class="text-[10px] text-slate-400">Số Học Viên (L6.1)</div>
                     <div class="text-base font-black text-amber-400 mt-0.5">${totalDeals.toLocaleString('vi-VN')}</div>
-                    <div class="text-[10px] text-slate-500 mt-0.5">Khớp học phí</div>
+                    <div class="text-[10px] text-slate-500 mt-0.5">Khớp học phí (trừ Refund & Branding)</div>
                 </div>
                 <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
                     <div class="text-[10px] text-slate-400">Tỷ Lệ Chuyển Đổi (CR)</div>
@@ -3320,7 +3336,7 @@
                 <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3 col-span-2 sm:col-span-1">
                     <div class="text-[10px] text-slate-400">ARPU</div>
                     <div class="text-base font-black text-cyan-400 mt-0.5">${formatVnCurrency(aov)}</div>
-                    <div class="text-[10px] text-slate-500 mt-0.5">Trung bình / Học viên</div>
+                    <div class="text-[10px] text-slate-500 mt-0.5">Doanh thu hợp lệ / HV (L6.1)</div>
                 </div>
             `;
         }
@@ -3397,17 +3413,17 @@
             const rowLookup = lookups[rowDim.lookup] || [];
             const colLookup = lookups[colDim.lookup] || [];
 
-            // 2D Matrix: cell = { rev: 0, deals: 0, leads: 0, studentMap: {} }
+            // 2D Matrix: cell = { rev: 0, validRev: 0, validDeals: 0, deals: 0, leads: 0, studentMap: {} }
             const matrix = {};
             const rowTotals = {};
             const colTotals = {};
-            let grandTotal = { rev: 0, deals: 0, leads: 0, studentMap: {} };
+            let grandTotal = { rev: 0, validRev: 0, validDeals: 0, deals: 0, leads: 0, studentMap: {} };
 
             const ensureCell = (r, c) => {
                 if (!matrix[r]) matrix[r] = {};
-                if (!matrix[r][c]) matrix[r][c] = { rev: 0, deals: 0, leads: 0, studentMap: {} };
-                if (!rowTotals[r]) rowTotals[r] = { rev: 0, deals: 0, leads: 0, studentMap: {} };
-                if (!colTotals[c]) colTotals[c] = { rev: 0, deals: 0, leads: 0, studentMap: {} };
+                if (!matrix[r][c]) matrix[r][c] = { rev: 0, validRev: 0, validDeals: 0, deals: 0, leads: 0, studentMap: {} };
+                if (!rowTotals[r]) rowTotals[r] = { rev: 0, validRev: 0, validDeals: 0, deals: 0, leads: 0, studentMap: {} };
+                if (!colTotals[c]) colTotals[c] = { rev: 0, validRev: 0, validDeals: 0, deals: 0, leads: 0, studentMap: {} };
             };
 
             // Aggregate DT: [m, ch, ls, dsp, c, mid, h, tg, cy, rev, days, id, date]
@@ -3420,14 +3436,30 @@
                     const days = item[10] || 0;
                     const stId = (lookups.id && item[11] !== undefined) ? lookups.id[item[11]] : ('d_' + item[0] + '_' + rev);
 
+                    // Tổng doanh thu (luôn cộng toàn bộ)
                     matrix[rVal][cVal].rev += rev;
-                    matrix[rVal][cVal].deals += 1;
                     rowTotals[rVal].rev += rev;
-                    rowTotals[rVal].deals += 1;
                     colTotals[cVal].rev += rev;
-                    colTotals[cVal].deals += 1;
                     grandTotal.rev += rev;
+
+                    // Tổng tất cả giao dịch
+                    matrix[rVal][cVal].deals += 1;
+                    rowTotals[rVal].deals += 1;
+                    colTotals[cVal].deals += 1;
                     grandTotal.deals += 1;
+
+                    // Dòng hợp lệ cho ARPU, CR và Số học viên L6.1 (Loại trừ Refund & Loại KHTS Branding IT)
+                    const isExcluded = isExcludedFromArpuCr(item, lookups);
+                    if (!isExcluded) {
+                        matrix[rVal][cVal].validRev += rev;
+                        matrix[rVal][cVal].validDeals += 1;
+                        rowTotals[rVal].validRev += rev;
+                        rowTotals[rVal].validDeals += 1;
+                        colTotals[cVal].validRev += rev;
+                        colTotals[cVal].validDeals += 1;
+                        grandTotal.validRev += rev;
+                        grandTotal.validDeals += 1;
+                    }
 
                     // Chu kỳ bán hàng: CHỈ tính từ các giao dịch thỏa mãn điều kiện chu kỳ bán hàng (New/Cross sell & loại trừ khóa học gia hạn/phí/branding)
                     const isCycleEligible = (item[13] !== undefined ? item[13] === 1 : (item[8] === 0 || item[8] === 1));
@@ -3464,9 +3496,9 @@
             const getMetricVal = (obj) => {
                 if (!obj) return null;
                 if (factMetric === 'rev') return obj.rev;
-                if (factMetric === 'deal') return obj.deals;
+                if (factMetric === 'deal') return obj.validDeals || 0;
                 if (factMetric === 'lead') return obj.leads;
-                if (factMetric === 'cr') return obj.leads > 0 ? ((obj.deals / obj.leads) * 100) : 0;
+                if (factMetric === 'cr') return obj.leads > 0 ? (((obj.validDeals || 0) / obj.leads) * 100) : 0;
                 if (factMetric === 'cycleAvg') {
                     const stMap = obj.studentMap || {};
                     const stKeys = Object.keys(stMap);
@@ -3474,12 +3506,15 @@
                     const totDays = stKeys.reduce((sum, k) => sum + (stMap[k] || 0), 0);
                     return totDays / stKeys.length;
                 }
-                if (factMetric === 'aov') return obj.deals > 0 ? (obj.rev / obj.deals) : 0;
+                if (factMetric === 'aov') {
+                    const vDeals = obj.validDeals || 0;
+                    return vDeals > 0 ? ((obj.validRev || 0) / vDeals) : 0;
+                }
                 return 0;
             };
 
-            let rowKeys = Object.keys(matrix).filter(r => rowTotals[r].deals > 0 || rowTotals[r].leads > 0 || rowTotals[r].rev > 0);
-            let colKeys = Object.keys(colTotals).filter(c => colTotals[c].deals > 0 || colTotals[c].leads > 0 || colTotals[c].rev > 0);
+            let rowKeys = Object.keys(matrix).filter(r => (rowTotals[r].validDeals || 0) > 0 || rowTotals[r].deals > 0 || rowTotals[r].leads > 0 || rowTotals[r].rev !== 0);
+            let colKeys = Object.keys(colTotals).filter(c => (colTotals[c].validDeals || 0) > 0 || colTotals[c].deals > 0 || colTotals[c].leads > 0 || colTotals[c].rev !== 0);
 
             // Limit cols if too many
             if (colKeys.length > 15) {
@@ -3636,9 +3671,16 @@
             if (rowDim.dtIdx !== -1) {
                 filteredDt.forEach(r => {
                     const k = rowLookup[r[rowDim.dtIdx]] || 'Khác';
-                    if (!agg[k]) agg[k] = { rev: 0, deals: 0, leads: 0, studentMap: {} };
-                    agg[k].rev += (r[9] || 0);
+                    if (!agg[k]) agg[k] = { rev: 0, validRev: 0, validDeals: 0, deals: 0, leads: 0, studentMap: {} };
+                    const rev = (r[9] || 0);
+                    agg[k].rev += rev;
                     agg[k].deals += 1;
+
+                    const isExcluded = isExcludedFromArpuCr(r, lookups);
+                    if (!isExcluded) {
+                        agg[k].validRev += rev;
+                        agg[k].validDeals += 1;
+                    }
 
                     // Chu kỳ bán hàng: CHỈ tính từ các giao dịch thỏa mãn điều kiện chu kỳ bán hàng (New/Cross sell & loại trừ khóa học gia hạn/phí/branding)
                     const isCycleEligible = (r[13] !== undefined ? r[13] === 1 : (r[8] === 0 || r[8] === 1));
@@ -3654,7 +3696,7 @@
             if (rowDim.leadIdx !== -1) {
                 filteredLead.forEach(r => {
                     const k = rowLookup[r[rowDim.leadIdx]] || 'Khác';
-                    if (!agg[k]) agg[k] = { rev: 0, deals: 0, leads: 0, studentMap: {} };
+                    if (!agg[k]) agg[k] = { rev: 0, validRev: 0, validDeals: 0, deals: 0, leads: 0, studentMap: {} };
                     agg[k].leads += 1;
                 });
             }
@@ -3662,9 +3704,9 @@
             const getMetricVal = (obj) => {
                 if (!obj) return 0;
                 if (factMetric === 'rev') return obj.rev;
-                if (factMetric === 'deal') return obj.deals;
+                if (factMetric === 'deal') return obj.validDeals || 0;
                 if (factMetric === 'lead') return obj.leads;
-                if (factMetric === 'cr') return obj.leads > 0 ? ((obj.deals / obj.leads) * 100) : 0;
+                if (factMetric === 'cr') return obj.leads > 0 ? (((obj.validDeals || 0) / obj.leads) * 100) : 0;
                 if (factMetric === 'cycleAvg') {
                     const stMap = obj.studentMap || {};
                     const stKeys = Object.keys(stMap);
@@ -3672,7 +3714,10 @@
                     const totDays = stKeys.reduce((sum, s) => sum + (stMap[s] || 0), 0);
                     return totDays / stKeys.length;
                 }
-                if (factMetric === 'aov') return obj.deals > 0 ? (obj.rev / obj.deals) : 0;
+                if (factMetric === 'aov') {
+                    const vDeals = obj.validDeals || 0;
+                    return vDeals > 0 ? ((obj.validRev || 0) / vDeals) : 0;
+                }
                 return 0;
             };
 
@@ -3753,6 +3798,7 @@
                     matchDate: (lookups.date && r[12] !== undefined) ? lookups.date[r[12]] : '',
                     rv: (lookups.rv && r[8] !== undefined) ? lookups.rv[r[8]] : '',
                     isCycleEligible: (r[13] !== undefined ? r[13] === 1 : (r[8] === 0 || r[8] === 1)),
+                    isArpuCrEligible: !isExcludedFromArpuCr(r, lookups),
                     days: r[10] || 0,
                     amount: r[9]
                 }));
@@ -3822,9 +3868,22 @@
             `;
 
             pageRecords.forEach(r => {
-                const badge = r.type === 'Doanh Thu' ? 
-                    '<span class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">Học Viên (L6.1)</span>' :
-                    '<span class="px-2 py-0.5 rounded text-[10px] bg-sky-500/10 text-sky-400 border border-sky-500/20 font-bold">Lead</span>';
+                let badge = '';
+                if (r.type === 'Lead') {
+                    badge = '<span class="px-2 py-0.5 rounded text-[10px] bg-sky-500/10 text-sky-400 border border-sky-500/20 font-bold">Lead</span>';
+                } else {
+                    const isRefund = r.rv && r.rv.toLowerCase().includes('refund');
+                    const isBranding = r.course && r.course.toLowerCase().includes('branding');
+                    if (r.isArpuCrEligible) {
+                        badge = '<span class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">Học Viên (L6.1)</span>';
+                    } else if (isRefund) {
+                        badge = `<span class="px-2 py-0.5 rounded text-[10px] bg-rose-500/10 text-rose-400 border border-rose-500/20 font-bold" title="${r.rv}">Refund (${r.rv})</span>`;
+                    } else if (isBranding) {
+                        badge = '<span class="px-2 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold" title="Khóa học Branding IT không tính ARPU/CR">Branding IT</span>';
+                    } else {
+                        badge = '<span class="px-2 py-0.5 rounded text-[10px] bg-slate-500/10 text-slate-400 border border-slate-500/20 font-bold">DT Ngoại Lệ</span>';
+                    }
+                }
                 
                 const valCol = r.type === 'Doanh Thu' ? 
                     `<span class="font-bold text-emerald-400 font-mono">${formatVnCurrency(r.amount)}</span>` :
