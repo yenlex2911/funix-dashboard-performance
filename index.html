@@ -3636,16 +3636,25 @@
             if (rowDim.dtIdx !== -1) {
                 filteredDt.forEach(r => {
                     const k = rowLookup[r[rowDim.dtIdx]] || 'Khác';
-                    if (!agg[k]) agg[k] = { rev: 0, deals: 0, leads: 0, cycleDays: 0 };
+                    if (!agg[k]) agg[k] = { rev: 0, deals: 0, leads: 0, studentMap: {} };
                     agg[k].rev += (r[9] || 0);
                     agg[k].deals += 1;
-                    agg[k].cycleDays += (r[10] || 0);
+
+                    // Chu kỳ bán hàng: CHỈ tính từ các giao dịch có Loại nhập học (rv) là 'New' (0) hoặc 'Cross sell' (1)
+                    const isCycleEligible = (r[8] === 0 || r[8] === 1);
+                    if (isCycleEligible) {
+                        const days = (r[10] || 0);
+                        const stId = (lookups.id && r[11] !== undefined) ? lookups.id[r[11]] : ('d_' + r[0] + '_' + r[9]);
+                        if (agg[k].studentMap[stId] === undefined || days > agg[k].studentMap[stId]) {
+                            agg[k].studentMap[stId] = days;
+                        }
+                    }
                 });
             }
             if (rowDim.leadIdx !== -1) {
                 filteredLead.forEach(r => {
                     const k = rowLookup[r[rowDim.leadIdx]] || 'Khác';
-                    if (!agg[k]) agg[k] = { rev: 0, deals: 0, leads: 0, cycleDays: 0 };
+                    if (!agg[k]) agg[k] = { rev: 0, deals: 0, leads: 0, studentMap: {} };
                     agg[k].leads += 1;
                 });
             }
@@ -3656,7 +3665,13 @@
                 if (factMetric === 'deal') return obj.deals;
                 if (factMetric === 'lead') return obj.leads;
                 if (factMetric === 'cr') return obj.leads > 0 ? ((obj.deals / obj.leads) * 100) : 0;
-                if (factMetric === 'cycleAvg') return obj.deals > 0 ? (obj.cycleDays / obj.deals) : 0;
+                if (factMetric === 'cycleAvg') {
+                    const stMap = obj.studentMap || {};
+                    const stKeys = Object.keys(stMap);
+                    if (stKeys.length === 0) return 0;
+                    const totDays = stKeys.reduce((sum, s) => sum + (stMap[s] || 0), 0);
+                    return totDays / stKeys.length;
+                }
                 if (factMetric === 'aov') return obj.deals > 0 ? (obj.rev / obj.deals) : 0;
                 return 0;
             };
