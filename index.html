@@ -3276,7 +3276,7 @@
 
             const stMap = {};
             filteredDt.forEach(r => {
-                const isCycleEligible = (r[8] === 0 || r[8] === 1); // New & Cross sell only
+                const isCycleEligible = (r[13] !== undefined ? r[13] === 1 : (r[8] === 0 || r[8] === 1));
                 if (isCycleEligible) {
                     const sId = (lookups.id && r[11] !== undefined) ? lookups.id[r[11]] : ('d_' + r[0] + '_' + r[9]);
                     if (stMap[sId] === undefined || (r[10] || 0) > stMap[sId]) {
@@ -3429,8 +3429,8 @@
                     grandTotal.rev += rev;
                     grandTotal.deals += 1;
 
-                    // Chu kỳ bán hàng: CHỈ tính từ các giao dịch có Loại nhập học (rv) là 'New' (0) hoặc 'Cross sell' (1)
-                    const isCycleEligible = (item[8] === 0 || item[8] === 1);
+                    // Chu kỳ bán hàng: CHỈ tính từ các giao dịch thỏa mãn điều kiện chu kỳ bán hàng (New/Cross sell & loại trừ khóa học gia hạn/phí/branding)
+                    const isCycleEligible = (item[13] !== undefined ? item[13] === 1 : (item[8] === 0 || item[8] === 1));
                     if (isCycleEligible) {
                         if (matrix[rVal][cVal].studentMap[stId] === undefined || days > matrix[rVal][cVal].studentMap[stId]) {
                             matrix[rVal][cVal].studentMap[stId] = days;
@@ -3640,8 +3640,8 @@
                     agg[k].rev += (r[9] || 0);
                     agg[k].deals += 1;
 
-                    // Chu kỳ bán hàng: CHỈ tính từ các giao dịch có Loại nhập học (rv) là 'New' (0) hoặc 'Cross sell' (1)
-                    const isCycleEligible = (r[8] === 0 || r[8] === 1);
+                    // Chu kỳ bán hàng: CHỈ tính từ các giao dịch thỏa mãn điều kiện chu kỳ bán hàng (New/Cross sell & loại trừ khóa học gia hạn/phí/branding)
+                    const isCycleEligible = (r[13] !== undefined ? r[13] === 1 : (r[8] === 0 || r[8] === 1));
                     if (isCycleEligible) {
                         const days = (r[10] || 0);
                         const stId = (lookups.id && r[11] !== undefined) ? lookups.id[r[11]] : ('d_' + r[0] + '_' + r[9]);
@@ -3752,7 +3752,7 @@
                     studentId: (lookups.id && r[11] !== undefined) ? lookups.id[r[11]] : '',
                     matchDate: (lookups.date && r[12] !== undefined) ? lookups.date[r[12]] : '',
                     rv: (lookups.rv && r[8] !== undefined) ? lookups.rv[r[8]] : '',
-                    isCycleEligible: (r[8] === 0 || r[8] === 1),
+                    isCycleEligible: (r[13] !== undefined ? r[13] === 1 : (r[8] === 0 || r[8] === 1)),
                     days: r[10] || 0,
                     amount: r[9]
                 }));
@@ -3840,7 +3840,7 @@
                         <td class="py-2 px-3 font-bold text-cyan-300">${r.dongSp}</td>
                         <td class="py-2 px-3 text-slate-300 max-w-xs truncate" title="${r.course}">${r.course}</td>
                         <td class="py-2 px-3 text-slate-400">${r.mid}</td>
-                        <td class="py-2 px-3 font-mono text-xs">${r.type === 'Doanh Thu' ? (r.isCycleEligible ? `<span class="text-amber-400 font-bold">${r.days} ngày</span>` : `<span class="text-slate-500">${r.days}d (${r.rv})</span>`) : '-'}</td>
+                        <td class="py-2 px-3 font-mono text-xs">${r.type === 'Doanh Thu' ? (r.isCycleEligible ? `<span class="text-amber-400 font-bold">${r.days} ngày</span>` : `<span class="text-slate-500" title="Không tính chu kỳ (Loại: ${r.rv || 'Khác'} / Khóa học loại trừ / Branding)">${r.days}d (K.Tính)</span>`) : '-'}</td>
                         <td class="py-2 px-3 font-semibold text-slate-300">${r.hannix}</td>
                         <td class="py-2 px-3 text-right">${valCol}</td>
                     </tr>
@@ -5612,6 +5612,7 @@
             };
             document.body.appendChild(script);
         }
+        window.fetchLiveGoogleSheetData = triggerJsonpSync;
 
         // 2. Global JSONP Callback handler
         window.handleLiveGvizDoanhThu = function(data) {
