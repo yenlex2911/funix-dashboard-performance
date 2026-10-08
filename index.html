@@ -84,7 +84,7 @@
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 pointer-events-none">
                             <i data-lucide="user" class="w-4 h-4"></i>
                         </span>
-                        <input type="text" id="authUsernameInput" required autocomplete="username" placeholder="admin, trangbt1, giangltt, lannh1, mkt_p1..." class="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-slate-700/80 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all">
+                        <input type="text" id="authUsernameInput" required autocomplete="username" placeholder="yennh, admin, trangbt1, giangltt, lannh1, mkt_p1..." class="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-slate-700/80 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all">
                     </div>
                 </div>
 
@@ -6643,11 +6643,19 @@
         // AUTHENTICATION & ACCESS CONTROL (RBAC)
         // ==========================================
                 const AUTH_USERS = {
+            yennh: {
+                pass: "3bin+911",
+                name: "Yên NH (Super Admin)",
+                role: "Toàn quyền quản trị hệ thống",
+                allowedTabs: ["tab-revenue", "tab-marketing", "tab-sales", "tab-dt-report", "tab-ty-trong", "tab-alerts", "tab-p1-report"],
+                defaultTab: "tab-revenue",
+                deptCode: "all"
+            },
             admin: {
                 pass: "FunixAdmin@2026",
                 name: "Ban Lãnh Đạo (Admin)",
-                role: "Toàn quyền quản trị",
-                allowedTabs: ["tab-revenue", "tab-marketing", "tab-sales", "tab-dt-report", "tab-ty-trong", "tab-alerts", "tab-p1-report"],
+                role: "Quản trị phân hệ",
+                allowedTabs: ["tab-revenue", "tab-marketing", "tab-sales", "tab-ty-trong"],
                 defaultTab: "tab-revenue",
                 deptCode: "all"
             },
