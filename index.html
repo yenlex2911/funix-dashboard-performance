@@ -528,6 +528,8 @@
                     <option value="course">Khóa học (Cột P)</option>
                     <option value="mid">MID (Người chạy QC)</option>
                     <option value="hannix">Nhân sự Sales (Hannix)</option>
+                    <option value="dept">Phòng Tuyển Sinh (GiangLTT, LanNH1, Khác)</option>
+                    <option value="dept">Phòng Tuyển Sinh (GiangLTT, LanNH1, Khác)</option>
                     <option value="matchDate">Ngày khớp GD</option>
                     <option value="studentId">Mã nhập học</option>
                     <option value="target">Đối tượng khách hàng</option>
@@ -3369,6 +3371,7 @@
             course:     { name: 'Khóa học',            dtIdx: 4,  leadIdx: 4,  lookup: 'c' },
             mid:        { name: 'MID (Người chạy QC)', dtIdx: 5,  leadIdx: 5,  lookup: 'mid' },
             hannix:     { name: 'Nhân sự Sales',       dtIdx: 6,  leadIdx: 6,  lookup: 'h' },
+            dept:       { name: 'Phòng Tuyển Sinh',    dtIdx: 6,  leadIdx: 6,  lookup: 'dept', isDept: true },
             matchDate:  { name: 'Ngày khớp GD',        dtIdx: 12, leadIdx: -1, lookup: 'date' },
             studentId:  { name: 'Mã nhập học',         dtIdx: 11, leadIdx: -1, lookup: 'id' },
             target:     { name: 'Đối tượng học viên',  dtIdx: 7,  leadIdx: 7,  lookup: 'tg' },
@@ -3432,6 +3435,12 @@
             const rowDim = DIM_MAPPINGS[rowDimKey];
             const colDim = DIM_MAPPINGS[colDimKey];
 
+            const getDeptName = (saleIdx, lk) => {
+                const s = (lk.h && saleIdx !== undefined) ? lk.h[saleIdx] : 'Khác';
+                if (['TrangNT11','QuynhNT4','HuyenDT2','ThuanHT1','TrangBT1','ChuyenHTH','GiangLTT'].includes(s)) return 'GiangLTT';
+                if (['ThanhPT','LinhVD2','HoaNTP','PhuocVT','LanNH1'].includes(s)) return 'LanNH1';
+                return 'Khác';
+            };
             const rowLookup = lookups[rowDim.lookup] || [];
             const colLookup = lookups[colDim.lookup] || [];
 
@@ -3451,8 +3460,8 @@
             // Aggregate DT: [m, ch, ls, dsp, c, mid, h, tg, cy, rev, days, id, date]
             if (rowDim.dtIdx !== -1 && colDim.dtIdx !== -1) {
                 filteredDt.forEach(item => {
-                    const rVal = rowLookup[item[rowDim.dtIdx]] || 'Khác';
-                    const cVal = colLookup[item[colDim.dtIdx]] || 'Khác';
+                    const rVal = rowDim.isDept ? getDeptName(item[rowDim.dtIdx], lookups) : (rowLookup[item[rowDim.dtIdx]] || 'Khác');
+                    const cVal = colDim.isDept ? getDeptName(item[colDim.dtIdx], lookups) : (colLookup[item[colDim.dtIdx]] || 'Khác');
                     ensureCell(rVal, cVal);
                     const rev = item[9] || 0;
                     const days = item[10] || 0;
@@ -3505,8 +3514,8 @@
             // Aggregate Leads: [m, ch, ls, dsp, c, mid, h, tg, st]
             if (rowDim.leadIdx !== -1 && colDim.leadIdx !== -1) {
                 filteredLead.forEach(item => {
-                    const rVal = rowLookup[item[rowDim.leadIdx]] || 'Khác';
-                    const cVal = colLookup[item[colDim.leadIdx]] || 'Khác';
+                    const rVal = rowDim.isDept ? getDeptName(item[rowDim.leadIdx], lookups) : (rowLookup[item[rowDim.leadIdx]] || 'Khác');
+                    const cVal = colDim.isDept ? getDeptName(item[colDim.leadIdx], lookups) : (colLookup[item[colDim.leadIdx]] || 'Khác');
                     ensureCell(rVal, cVal);
                     matrix[rVal][cVal].leads += 1;
                     rowTotals[rVal].leads += 1;
@@ -4757,6 +4766,7 @@
         function applyDtTableFilters() {
             const query = (document.getElementById('dtSearchInput')?.value || '').toLowerCase().trim();
             const room = document.getElementById('dtFilterRoom')?.value || 'ALL';
+            const filterSales = document.getElementById('dtFilterHannix')?.value || 'ALL';
             const type = document.getElementById('dtFilterType')?.value || 'ALL';
             const filterDongSP = document.getElementById('dtFilterDongSP')?.value || 'ALL';
 
@@ -4764,6 +4774,7 @@
                 const txDongSP = getDongSPFromTransaction(tx);
                 if (filterDongSP !== 'ALL' && txDongSP !== filterDongSP) return false;
                 if (room !== 'ALL' && tx.phongHannix !== room) return false;
+                if (filterSales !== 'ALL' && tx.hannix !== filterSales) return false;
                 if (type !== 'ALL' && tx.loaiNhapHoc !== type) return false;
                 if (query) {
                     const matchMssv = (tx.mssv || '').toLowerCase().includes(query);
