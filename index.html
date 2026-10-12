@@ -4402,6 +4402,22 @@
             const rawVal = (tx.loaiKHTSNE || tx.loaiKHTS || tx.khoaHoc || '').trim();
             if (!rawVal) return 'Khác / Chưa phân loại';
 
+            // Mapping động trực tiếp từ Sheet Category (GID: 770210720)
+            if (window.DYNAMIC_CATEGORY_MAP) {
+                const low = rawVal.toLowerCase();
+                const mappedCat = window.DYNAMIC_CATEGORY_MAP[low];
+                if (mappedCat) {
+                    if (mappedCat === 'P0') return 'Dòng SP P0';
+                    if (mappedCat === 'P1') return 'Dòng SP P1-SE';
+                    if (mappedCat === 'P2') return 'Dòng SP P2';
+                    if (mappedCat === 'P3') return 'Dòng SP P3';
+                    if (mappedCat === 'P4') return 'Dòng SP P4';
+                    return mappedCat;
+                }
+            }
+            const rawVal = (tx.loaiKHTSNE || tx.loaiKHTS || tx.khoaHoc || '').trim();
+            if (!rawVal) return 'Khác / Chưa phân loại';
+
             // 0. Dòng SP P0: chứa text 'Robotics' hoặc 'Wings'
             if (/Robotics/i.test(rawVal) || /Wings/i.test(rawVal)) {
                 return 'Dòng SP P0';
@@ -5672,17 +5688,19 @@
         const GID_DOANH_THU = "264684019";        // Menu 4: Sổ Nhật Ký Giao Dịch
         const GID_LEAD_UPTODATE = "1229610676";   // Menu 2: Báo cáo Marketing Performance
         const GID_HANNIX_UPTODATE = "664750046";  // Menu 3: Báo cáo Sales Performance
+        const GID_CATEGORY = "770210720";         // Tab Category (Đã đổi tên từ Product category)
+        const LOCAL_STORAGE_KEY_CAT = "FUNIX_LIVE_CATEGORY_MAP_V1";
 
         const LOCAL_STORAGE_KEY_DT = "FUNIX_LIVE_DT_TRANSACTIONS_V2";
         const LOCAL_STORAGE_KEY_MKT = "FUNIX_LIVE_MKT_DATA_V2";
         const LOCAL_STORAGE_KEY_SALES = "FUNIX_LIVE_SALES_DATA_V2";
 
-        let gvizSyncTracker = { dt: false, mkt: false, sales: false };
+        let gvizSyncTracker = { dt: false, mkt: false, sales: false, cat: false };
 
         function checkAllSyncComplete(source) {
             gvizSyncTracker[source] = true;
             console.log("GViz Sync finished source:", source, gvizSyncTracker);
-            if (gvizSyncTracker.dt && gvizSyncTracker.mkt && gvizSyncTracker.sales) {
+            if (gvizSyncTracker.dt && gvizSyncTracker.mkt && gvizSyncTracker.sales && gvizSyncTracker.cat) {
                 updateSyncBadgeSuccess();
                 refreshCurrentTab();
             }
@@ -5694,10 +5712,10 @@
             if (syncBadge) {
                 syncBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span> Đang đồng bộ cả 4 Menu...';
             }
-            gvizSyncTracker = { dt: false, mkt: false, sales: false };
+            gvizSyncTracker = { dt: false, mkt: false, sales: false, cat: false };
 
             // Cleanup old script tags
-            ['gviz-jsonp-dt', 'gviz-jsonp-mkt', 'gviz-jsonp-sales'].forEach(id => {
+            ['gviz-jsonp-dt', 'gviz-jsonp-mkt', 'gviz-jsonp-sales', 'gviz-jsonp-cat'].forEach(id => {
                 const old = document.getElementById(id);
                 if (old) old.remove();
             });
@@ -5724,6 +5742,13 @@
             scriptSales.src = "https://docs.google.com/spreadsheets/d/" + SPREADSHEET_ID_DOANH_THU + "/gviz/tq?gid=" + GID_HANNIX_UPTODATE + "&tqx=responseHandler:window.handleLiveGvizSales&_t=" + timestamp;
             scriptSales.onerror = () => checkAllSyncComplete('sales');
             document.body.appendChild(scriptSales);
+
+            // D. Kéo Sheet Category (đổi tên từ Product category - GID: 770210720)
+            const scriptCat = document.createElement('script');
+            scriptCat.id = 'gviz-jsonp-cat';
+            scriptCat.src = "https://docs.google.com/spreadsheets/d/" + SPREADSHEET_ID_DOANH_THU + "/gviz/tq?gid=" + GID_CATEGORY + "&tqx=responseHandler:window.handleLiveGvizCategory&_t=" + timestamp;
+            scriptCat.onerror = () => checkAllSyncComplete('cat');
+            document.body.appendChild(scriptCat);
 
             // Timeout an toàn sau 8 giây
             setTimeout(() => {
@@ -5924,6 +5949,33 @@
             }
             checkAllSyncComplete('sales');
         };
+        // 5. Callback Category (Cập nhật từ tab Category - GID: 770210720)
+        window.handleLiveGvizCategory = function(data) {
+            if (data && data.table && data.table.rows && data.table.rows.length > 0) {
+                const rows = data.table.rows;
+                const getCell = (r, idx) => {
+                    if (!r || !r.c || !r.c[idx]) return '';
+                    const cell = r.c[idx];
+                    return (cell.f !== undefined && cell.f !== null) ? String(cell.f).trim() : (cell.v !== undefined && cell.v !== null ? String(cell.v).trim() : '');
+                };
+                const catMap = {};
+                rows.forEach(r => {
+                    const prod = getCell(r, 0);
+                    const cat = getCell(r, 1);
+                    const khts = getCell(r, 2);
+                    if (cat) {
+                        if (prod && prod !== 'Product') catMap[prod.toLowerCase()] = cat;
+                        if (khts && khts !== 'Loại KHTS NE') catMap[khts.toLowerCase()] = cat;
+                    }
+                });
+                window.DYNAMIC_CATEGORY_MAP = Object.assign(window.DYNAMIC_CATEGORY_MAP || {}, catMap);
+                try {
+                    localStorage.setItem(LOCAL_STORAGE_KEY_CAT, JSON.stringify(window.DYNAMIC_CATEGORY_MAP));
+                } catch(e) {}
+            }
+            checkAllSyncComplete('cat');
+        };
+
 
         function updateSyncBadgeSuccess() {
             const syncBadge = document.getElementById('liveSyncBadge');
@@ -5965,6 +6017,11 @@
                     if (parsed && Object.keys(parsed).length > 0) {
                         APP_DATA.salesDataByMonth = Object.assign(APP_DATA.salesDataByMonth || {}, parsed);
                     }
+                }
+                const storedCat = localStorage.getItem(LOCAL_STORAGE_KEY_CAT);
+                if (storedCat) {
+                    const parsed = JSON.parse(storedCat);
+                    if (parsed) window.DYNAMIC_CATEGORY_MAP = Object.assign(window.DYNAMIC_CATEGORY_MAP || {}, parsed);
                 }
                 updateSyncBadgeSuccess();
             } catch(e) {}
