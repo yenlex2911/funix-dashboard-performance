@@ -4415,8 +4415,6 @@
                     return mappedCat;
                 }
             }
-            const rawVal = (tx.loaiKHTSNE || tx.loaiKHTS || tx.khoaHoc || '').trim();
-            if (!rawVal) return 'Khác / Chưa phân loại';
 
             // 0. Dòng SP P0: chứa text 'Robotics' hoặc 'Wings'
             if (/Robotics/i.test(rawVal) || /Wings/i.test(rawVal)) {
