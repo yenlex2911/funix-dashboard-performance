@@ -58,7 +58,7 @@
             border-color: #38bdf8;
         }
     </style>
-    <script src="olap_data_bundle.js?v=20261012_v4"></script>
+    <script src="olap_data_bundle.js?v=20261012_v5"></script>
 </head>
 <body class="min-h-full flex flex-col font-sans bg-slate-950 text-slate-100 antialiased custom-scrollbar">
 
@@ -4303,7 +4303,7 @@
                 const mData = APP_DATA.salesDataByMonth[mKey] || {};
                 Object.values(mData).forEach(s => {
                     if (!map[s.name]) {
-                        map[s.name] = { ...s, leadTouch: 0, clientTouch: 0, leadMKT: 0, leadSeeding: 0, leadKhac: 0, dtTong: 0, dtFW: 0, dtCross: 0, teTotal: 0, crHotleadSum: 0, crCount: 0 };
+                        map[s.name] = { ...s, leadTouch: 0, clientTouch: 0, leadMKT: 0, leadSeeding: 0, leadKhac: 0, dtTong: 0, dtFW: 0, dtCross: 0, teTotal: 0, teFW: 0, teMKT: 0, teSeeding: 0, crHotleadSum: 0, crCount: 0 };
                     }
                     map[s.name].leadTouch += (s.leadTouch || 0);
                     map[s.name].clientTouch += (s.clientTouch || 0);
@@ -4314,6 +4314,9 @@
                     map[s.name].dtFW += (s.dtFW || 0);
                     map[s.name].dtCross += (s.dtCross || 0);
                     map[s.name].teTotal += (s.teTotal || 0);
+                    map[s.name].teFW = (map[s.name].teFW || 0) + (s.teFW || 0);
+                    map[s.name].teMKT = (map[s.name].teMKT || 0) + (s.teMKT || 0);
+                    map[s.name].teSeeding = (map[s.name].teSeeding || 0) + (s.teSeeding || 0);
                     map[s.name].crHotleadSum += (s.crHotleadSum || 0);
                     map[s.name].crCount += (s.crCount || 0);
                 });
@@ -4360,18 +4363,27 @@
                 </div>
             `;
 
+            function getSaleCrHotlead(sale) {
+                const hotlead = (sale.leadMKT || 0) + (sale.leadSeeding || 0);
+                if (hotlead <= 0) return 0;
+                const converted = (sale.teFW !== undefined && sale.teFW > 0) ? sale.teFW : (sale.teTotal || 0);
+                return (converted / hotlead) * 100;
+            }
+
             activeSales.sort((a, b) => {
                 if (currentSalesSort === 'revenue') return b.dtTong - a.dtTong;
-                const crA = a.crCount > 0 ? (a.crHotleadSum / a.crCount) : 0;
-                const crB = b.crCount > 0 ? (b.crHotleadSum / b.crCount) : 0;
+                const crA = getSaleCrHotlead(a);
+                const crB = getSaleCrHotlead(b);
                 return crB - crA;
             });
 
             document.getElementById('salesTableBody').innerHTML = activeSales.map((s, idx) => {
                 const isOfficial = APP_DATA.official10Sales.includes(s.name.toLowerCase());
                 const isManager = APP_DATA.managers.includes(s.name.toLowerCase());
-                const avgCr = s.crCount > 0 ? (s.crHotleadSum / s.crCount) : 0;
+                const avgCr = getSaleCrHotlead(s);
                 const sLeadAssigned = (s.leadMKT || 0) + (s.leadSeeding || 0) + (s.leadKhac || 0);
+                const sHotlead = (s.leadMKT || 0) + (s.leadSeeding || 0);
+                const sTeFW = (s.teFW !== undefined) ? (s.teFW || 0) : (s.teTotal || 0);
 
                 let roleBadge = '<span class="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-400 border border-slate-700">Phòng Khác</span>';
                 if (s.room === 'GiangLTT') roleBadge = '<span class="px-2 py-0.5 rounded text-[10px] bg-sky-500/10 text-sky-400 border border-sky-500/20 font-semibold">Phòng GiangLTT</span>';
@@ -4394,7 +4406,9 @@
                         </td>
                         <td class="py-2.5 px-3 text-right text-slate-300">${formatVnCurrency(s.dtFW)}</td>
                         <td class="py-2.5 px-3 text-right font-bold text-emerald-400">${formatVnCurrency(s.dtTong)}</td>
-                        <td class="py-2.5 px-3 text-right font-semibold ${avgCr >= 10 ? 'text-emerald-400' : 'text-slate-400'}">${avgCr > 0 ? avgCr.toFixed(2).replace('.', ',') + '%' : '-'}</td>
+                        <td class="py-2.5 px-3 text-right font-semibold ${avgCr >= 8 ? 'text-emerald-400' : (avgCr >= 4 ? 'text-sky-400' : 'text-slate-300')}" title="Số chốt FW: ${sTeFW} / Hotlead: ${sHotlead} (MKT: ${s.leadMKT || 0} + Seeding: ${s.leadSeeding || 0})">
+                            ${avgCr > 0 ? avgCr.toFixed(2).replace('.', ',') + '%' : '-'}
+                        </td>
                         <td class="py-2.5 px-3 text-center">
                             ${s.dtTong >= 100000000 ? '<span class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Xuất Sắc</span>' : (s.dtTong >= 50000000 ? '<span class="px-2 py-0.5 rounded text-[10px] bg-sky-500/10 text-sky-400 border border-sky-500/20">Đạt Target</span>' : '<span class="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-400">Đang Bám Đuổi</span>')}
                         </td>
@@ -5700,11 +5714,11 @@
         const GID_LEAD_UPTODATE = "1229610676";   // Menu 2: Báo cáo Marketing Performance
         const GID_HANNIX_UPTODATE = "664750046";  // Menu 3: Báo cáo Sales Performance
         const GID_CATEGORY = "770210720";         // Tab Category (Đã đổi tên từ Product category)
-        const LOCAL_STORAGE_KEY_CAT = "FUNIX_LIVE_CATEGORY_MAP_V4";
+        const LOCAL_STORAGE_KEY_CAT = "FUNIX_LIVE_CATEGORY_MAP_V5";
 
-        const LOCAL_STORAGE_KEY_DT = "FUNIX_LIVE_DT_TRANSACTIONS_V4";
-        const LOCAL_STORAGE_KEY_MKT = "FUNIX_LIVE_MKT_DATA_V4";
-        const LOCAL_STORAGE_KEY_SALES = "FUNIX_LIVE_SALES_DATA_V4";
+        const LOCAL_STORAGE_KEY_DT = "FUNIX_LIVE_DT_TRANSACTIONS_V5";
+        const LOCAL_STORAGE_KEY_MKT = "FUNIX_LIVE_MKT_DATA_V5";
+        const LOCAL_STORAGE_KEY_SALES = "FUNIX_LIVE_SALES_DATA_V5";
 
         const GID_RAW_LEAD = "257094653";         // Menu 1: Tab Raw Lead (OLAP Fact Leads)
         let gvizSyncTracker = { dt: false, mkt: false, sales: false, cat: false, raw_lead: false };
@@ -5929,21 +5943,37 @@
                     const target = monthlySalesMap[mKey];
 
                     if (!target[name]) {
-                        target[name] = { name, room, leadTouch: 0, clientTouch: 0, leadMKT: 0, leadSeeding: 0, leadKhac: 0, dtTong: 0, dtFW: 0, dtCross: 0, teTotal: 0, crHotleadSum: 0, crCount: 0 };
+                        target[name] = { name, room, leadTouch: 0, clientTouch: 0, leadMKT: 0, leadSeeding: 0, leadKhac: 0, dtTong: 0, dtFW: 0, dtCross: 0, teTotal: 0, teFW: 0, teMKT: 0, teSeeding: 0, crHotleadSum: 0, crCount: 0 };
                     }
 
-                    const crRaw = getCell(r, 24);
-                    const crVal = parseNum(crRaw.replace('%',''));
+                    const leadMKT = parseNum(getCell(r, 8));
+                    const leadSeeding = parseNum(getCell(r, 9));
+                    const leadKhac = parseNum(getCell(r, 10));
+                    const teTotal = parseNum(getCell(r, 20));
+                    const teFW = parseNum(getCell(r, 21));
+                    const teMKT = parseNum(getCell(r, 22));
+                    const teSeeding = parseNum(getCell(r, 23));
+
+                    const hotlead = leadMKT + leadSeeding;
+                    const crColRaw = getCell(r, 26) || getCell(r, 24);
+                    let crVal = parseNum(crColRaw.replace('%',''));
+                    if (crVal <= 0 && hotlead > 0) {
+                        const converted = teFW > 0 ? teFW : teTotal;
+                        crVal = (converted / hotlead) * 100;
+                    }
 
                     target[name].leadTouch += parseNum(getCell(r, 4));
                     target[name].clientTouch += parseNum(getCell(r, 5));
-                    target[name].leadMKT += parseNum(getCell(r, 8));
-                    target[name].leadSeeding += parseNum(getCell(r, 9));
-                    target[name].leadKhac += parseNum(getCell(r, 10));
+                    target[name].leadMKT += leadMKT;
+                    target[name].leadSeeding += leadSeeding;
+                    target[name].leadKhac += leadKhac;
                     target[name].dtTong += parseNum(getCell(r, 15));
                     target[name].dtFW += parseNum(getCell(r, 16));
                     target[name].dtCross += parseNum(getCell(r, 19));
-                    target[name].teTotal += parseNum(getCell(r, 20));
+                    target[name].teTotal += teTotal;
+                    target[name].teFW += teFW;
+                    target[name].teMKT += teMKT;
+                    target[name].teSeeding += teSeeding;
                     if (crVal > 0) {
                         target[name].crHotleadSum += crVal;
                         target[name].crCount += 1;
@@ -6075,9 +6105,10 @@
 
         function initStoredData() {
             // Bust older cache versions
-            ['FUNIX_LIVE_DT_TRANSACTIONS_V1','FUNIX_LIVE_DT_TRANSACTIONS_V2','FUNIX_LIVE_DT_TRANSACTIONS_V3',
-             'FUNIX_LIVE_MKT_DATA_V1','FUNIX_LIVE_MKT_DATA_V2','FUNIX_LIVE_MKT_DATA_V3',
-             'FUNIX_LIVE_SALES_DATA_V1','FUNIX_LIVE_SALES_DATA_V2','FUNIX_LIVE_SALES_DATA_V3'].forEach(k => {
+            ['FUNIX_LIVE_DT_TRANSACTIONS_V1','FUNIX_LIVE_DT_TRANSACTIONS_V2','FUNIX_LIVE_DT_TRANSACTIONS_V3','FUNIX_LIVE_DT_TRANSACTIONS_V4',
+             'FUNIX_LIVE_MKT_DATA_V1','FUNIX_LIVE_MKT_DATA_V2','FUNIX_LIVE_MKT_DATA_V3','FUNIX_LIVE_MKT_DATA_V4',
+             'FUNIX_LIVE_SALES_DATA_V1','FUNIX_LIVE_SALES_DATA_V2','FUNIX_LIVE_SALES_DATA_V3','FUNIX_LIVE_SALES_DATA_V4',
+             'FUNIX_LIVE_CATEGORY_MAP_V1','FUNIX_LIVE_CATEGORY_MAP_V2','FUNIX_LIVE_CATEGORY_MAP_V3','FUNIX_LIVE_CATEGORY_MAP_V4'].forEach(k => {
                 try { localStorage.removeItem(k); } catch(e) {}
             });
             try {
