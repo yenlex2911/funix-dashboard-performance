@@ -58,7 +58,7 @@
             border-color: #38bdf8;
         }
     </style>
-    <script src="olap_data_bundle.js?v=20261015_v3"></script>
+    <script src="olap_data_bundle.js?v=20261015_v4"></script>
 </head>
 <body class="min-h-full flex flex-col font-sans bg-slate-950 text-slate-100 antialiased custom-scrollbar">
 
@@ -951,6 +951,7 @@
                         <h2 class="text-sm font-bold text-slate-200 flex items-center gap-2">
                             <i data-lucide="award" class="w-4 h-4 text-amber-400"></i>
                             <span>Bảng Xếp Hạng Doanh Số Toàn Bộ Đội Ngũ Sales</span>
+                            <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20" id="salesPeriodBadge">Kỳ báo cáo</span>
                         </h2>
                         <p class="text-[11px] text-slate-400 mt-0.5">Liệt kê đầy đủ tất cả nhân sự có phát sinh doanh thu/lead trong tháng (Đánh dấu rõ vai trò Sales chính thức / Trưởng phòng)</p>
                     </div>
@@ -4931,6 +4932,14 @@
         // ==========================================
         // 3. SALES PERFORMANCE LOGIC
         // ==========================================
+        function getMktFilterMonths() {
+            const allMonths = Object.keys((APP_DATA && APP_DATA.mktDataByMonth) || {});
+            if (currentMonthFilter === 'YEAR_2026') return allMonths.filter(m => m.startsWith('2026'));
+            if (currentMonthFilter === 'YEAR_2025') return allMonths.filter(m => m.startsWith('2025'));
+            if (currentMonthFilter === 'TOTAL_ALL' || currentMonthFilter === 'ALL') return allMonths;
+            return [currentMonthFilter || '2026-10'];
+        }
+
         function setSalesSort(mode) {
             currentSalesSort = mode;
             document.querySelectorAll('.sort-btn').forEach(btn => btn.classList.remove('active'));
@@ -4941,6 +4950,12 @@
 
         function renderSalesTab() {
             const filterMonths = getMktFilterMonths();
+            const periodLabel = currentMonthFilter.startsWith('YEAR_') 
+                ? (currentMonthFilter === 'YEAR_2026' ? 'Cả năm 2026' : 'Cả năm 2025') 
+                : (currentMonthFilter === 'ALL' ? 'Toàn bộ các năm' : ('Tháng ' + currentMonthFilter.slice(5) + '/' + currentMonthFilter.slice(0, 4)));
+            const pBadge = document.getElementById('salesPeriodBadge');
+            if (pBadge) pBadge.textContent = periodLabel;
+
             const map = {};
 
             filterMonths.forEach(mKey => {
@@ -5151,14 +5166,13 @@
                         <div class="space-y-1">
                             <div class="font-bold text-amber-300">Thông báo dữ liệu kỳ ${periodLabel}:</div>
                             <p class="text-slate-300 leading-relaxed">
-                                Sheet <strong>Doanh thu</strong> (nhật ký chi tiết từng mã giao dịch khớp thu phí) trong tệp dữ liệu nguồn hiện có các bản ghi từ <strong>Tháng 01/2025 đến Tháng 07/2026</strong>. Chưa có bản ghi giao dịch chi tiết của ${periodLabel}.
+                                Sheet <strong>Doanh thu</strong> (nhật ký chi tiết từng mã giao dịch khớp thu phí) trong tệp dữ liệu nguồn hiện có các bản ghi từ <strong>Tháng 01/2025 đến Tháng 09/2026</strong>. Chưa có bản ghi giao dịch chi tiết của ${periodLabel}.
                             </p>
-                            <div class="pt-1 text-[11px] text-sky-400 font-semibold flex items-center gap-2">
-                                <span>Gợi ý: Chọn kỳ</span>
-                                <button onclick="selectQuickPeriod('YEAR_2026')" class="underline hover:text-sky-300">Cả năm 2026</button>
-                                <span>hoặc các tháng từ</span>
-                                <button onclick="selectQuickPeriod('2026-07')" class="underline hover:text-sky-300">T07/2026 trở về trước</button>
-                                <span>để xem đầy đủ tỷ trọng dòng sản phẩm.</span>
+                            <div class="pt-1.5 text-[11px] text-sky-400 font-semibold flex items-center gap-2 flex-wrap">
+                                <span class="text-slate-400">Xem nhanh dữ liệu:</span>
+                                <button type="button" onclick="selectQuickPeriod('2026-09')" class="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 font-medium transition-all cursor-pointer">Tháng 09/2026 (260 Giao Dịch)</button>
+                                <button type="button" onclick="selectQuickPeriod('YEAR_2026')" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 font-medium transition-all cursor-pointer">Cả năm 2026 (1.517 Giao Dịch)</button>
+                                <button type="button" onclick="selectQuickPeriod('ALL')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-medium transition-all cursor-pointer">Tất cả các năm (2025 - 2026)</button>
                             </div>
                         </div>
                     </div>
