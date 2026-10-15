@@ -280,7 +280,7 @@
                         <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]"></span>
                         <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Chỉ Số FACT (Measures / Định Lượng)</span>
                     </div>
-                    <span class="text-[10px] text-slate-400">6 Chỉ số đo lường</span>
+                    <span class="text-[10px] text-slate-400">7 Chỉ số đo lường</span>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                     <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800 flex items-start gap-2">
@@ -323,6 +323,13 @@
                         <div>
                             <div class="font-bold text-slate-200">ARPU</div>
                             <div class="text-[10px] text-slate-400">Doanh thu bình quân / Học viên (L6.1)</div>
+                        </div>
+                    </div>
+                    <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800 flex items-start gap-2 sm:col-span-2">
+                        <i data-lucide="user-check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                        <div>
+                            <div class="font-bold text-slate-200">ARPE (Doanh thu TB / Đầu Sale hoạt động)</div>
+                            <div class="text-[10px] text-slate-400">Doanh thu hợp lệ / Số sale phát sinh doanh thu (loại trừ các khoản Refund & Branding IT)</div>
                         </div>
                     </div>
                 </div>
@@ -5728,8 +5735,8 @@
             const theadRow = document.getElementById('tyTrongTableHeadRow');
             if (theadRow) {
                 theadRow.innerHTML = `
-                    <th class="py-3 px-3 sticky left-0 z-30 bg-slate-950 w-48 shadow">Dòng Sản Phẩm</th>
-                    <th class="py-3 px-2 sticky left-48 z-30 bg-slate-950 w-28 shadow">Chỉ Số</th>
+                    <th class="py-3 px-3 sticky left-0 z-30 bg-slate-950 w-[150px] min-w-[150px] max-w-[150px] border-r border-slate-800 shadow">Dòng Sản Phẩm</th>
+                    <th class="py-3 px-2 sticky left-[150px] z-30 bg-slate-950 w-[95px] min-w-[95px] max-w-[95px] border-r border-slate-800 shadow">Chỉ Số</th>
                     ${periodCols.map(col => `<th class="py-3 px-3 text-right whitespace-nowrap">${col.label}</th>`).join('')}
                 `;
             }
@@ -5782,14 +5789,14 @@
                         return `
                             <tr class="${rowClass}">
                                 ${mIdx === 0 ? `
-                                    <td rowspan="${metricsToShow.length}" class="py-2.5 px-3 font-sans font-bold text-slate-100 sticky left-0 z-10 ${isEven ? 'bg-slate-900' : 'bg-slate-950'} border-r border-slate-800 align-top">
+                                    <td rowspan="${metricsToShow.length}" class="py-2.5 px-3 font-sans font-bold text-slate-100 sticky left-0 z-10 ${isEven ? 'bg-slate-900' : 'bg-slate-950'} border-r border-slate-800 align-top w-[150px] min-w-[150px] max-w-[150px]">
                                         <div class="flex items-center gap-1.5 pt-1">
                                             <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: ${pColor}"></span>
                                             <span class="break-words">${p}</span>
                                         </div>
                                     </td>
                                 ` : ''}
-                                <td class="py-1.5 px-2 font-sans font-semibold ${m.color} sticky left-48 z-10 ${isEven ? 'bg-slate-900' : 'bg-slate-950'} border-r border-slate-800 whitespace-nowrap">
+                                <td class="py-1.5 px-2 font-sans font-semibold ${m.color} sticky left-[150px] z-10 ${isEven ? 'bg-slate-900' : 'bg-slate-950'} border-r border-slate-800 whitespace-nowrap w-[95px] min-w-[95px] max-w-[95px]">
                                     ${m.name}
                                 </td>
                                 ${periodCols.map(col => {
