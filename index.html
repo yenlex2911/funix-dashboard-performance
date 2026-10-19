@@ -194,7 +194,7 @@
                     <!-- Build Version Badge -->
                     <span id="dashboardBuildBadge" class="hidden lg:inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-900 border border-slate-800 text-[10px] text-slate-400 font-mono" title="Phiên bản Dashboard hiện tại">
                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                        <span id="buildVersionText">v2026.10.19.v8.1</span>
+                        <span id="buildVersionText">v2026.10.19.v8.2</span>
                     </span>
 
                     <!-- User Profile & Logout Badge -->
@@ -1210,6 +1210,13 @@
                         <button onclick="setTyTrongPeriod('YEARS')" id="btn-period-YEARS" class="period-btn px-3 py-1 rounded-md bg-slate-800 text-slate-300 font-semibold border border-slate-700 transition-all">Từng Năm (2020 - 2026)</button>
                     </div>
 
+                    <!-- Granularity Master Switch (Cả Năm vs Theo 12 Tháng) -->
+                    <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
+                        <span class="text-slate-400 text-[11px] px-1 font-medium hidden sm:inline">Phân rã cột:</span>
+                        <button onclick="setTyTrongMasterGranularity('year')" id="btn-master-gran-year" class="px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40 transition-all" title="Xem tổng hợp cả năm">Cả Năm</button>
+                        <button onclick="setTyTrongMasterGranularity('month')" id="btn-master-gran-month" class="px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 font-semibold border border-transparent transition-all" title="Hiện 12 cụm ứng với 12 tháng">Theo Tháng (12 Cụm)</button>
+                    </div>
+
                     <!-- View Mode Switcher -->
                     <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
                         <button onclick="setTyTrongViewMode('compare')" id="btn-mode-compare" class="mode-btn active px-3 py-1 rounded-md bg-pink-500/20 text-pink-300 font-bold border border-pink-500/40 flex items-center gap-1.5 transition-all">
@@ -1302,7 +1309,13 @@
                                 <i data-lucide="bar-chart-3" class="w-4 h-4 text-emerald-400"></i>
                                 <span>1. So Sánh Doanh Thu Giữa Các Dòng Sản Phẩm</span>
                             </h2>
-                            <span class="text-[11px] text-emerald-400 font-bold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20" id="badgeCompareRevPeriod">Năm 2026</span>
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-[11px] text-emerald-400 font-bold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20" id="badgeCompareRevPeriod">Năm 2026</span>
+                                <div class="inline-flex items-center bg-slate-950 p-0.5 rounded border border-slate-800 text-[10px]">
+                                    <button onclick="setTyTrongChartGranularity('rev', 'year')" id="btn-gran-rev-year" class="px-2 py-0.5 rounded font-semibold transition-all bg-emerald-500/20 text-emerald-300">Cả năm</button>
+                                    <button onclick="setTyTrongChartGranularity('rev', 'month')" id="btn-gran-rev-month" class="px-2 py-0.5 rounded font-semibold transition-all text-slate-400 hover:text-slate-200">Theo tháng</button>
+                                </div>
+                            </div>
                         </div>
                         <p class="text-[11px] text-slate-400 mb-3">Xếp hạng quy mô doanh thu và tỷ trọng đóng góp của từng dòng sản phẩm trong kỳ được chọn</p>
                         <div class="h-72 relative">
@@ -1335,7 +1348,13 @@
                                 <i data-lucide="tag" class="w-4 h-4 text-sky-400"></i>
                                 <span>3. So Sánh Chi Phí Trên Mỗi Lead (CPL - VNĐ)</span>
                             </h2>
-                            <span class="text-[11px] text-sky-400 font-semibold px-2 py-0.5 rounded bg-sky-500/10 border border-sky-500/20" id="badgeCompareCplPeriod">Năm 2026</span>
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-[11px] text-sky-400 font-semibold px-2 py-0.5 rounded bg-sky-500/10 border border-sky-500/20" id="badgeCompareCplPeriod">Năm 2026</span>
+                                <div class="inline-flex items-center bg-slate-950 p-0.5 rounded border border-slate-800 text-[10px]">
+                                    <button onclick="setTyTrongChartGranularity('cpl', 'year')" id="btn-gran-cpl-year" class="px-2 py-0.5 rounded font-semibold transition-all bg-sky-500/20 text-sky-300">Cả năm</button>
+                                    <button onclick="setTyTrongChartGranularity('cpl', 'month')" id="btn-gran-cpl-month" class="px-2 py-0.5 rounded font-semibold transition-all text-slate-400 hover:text-slate-200">Theo tháng</button>
+                                </div>
+                            </div>
                         </div>
                         <div class="flex items-center gap-4 text-[10px] text-slate-400 mb-2">
                             <span class="flex items-center gap-1"><span class="w-2 h-2 rounded bg-emerald-400"></span> Rẻ (&lt; 100k)</span>
@@ -1354,7 +1373,13 @@
                                 <i data-lucide="percent" class="w-4 h-4 text-amber-400"></i>
                                 <span>4. So Sánh Tỷ Lệ Chuyển Đổi (CR TE new %)</span>
                             </h2>
-                            <span class="text-[11px] text-amber-400 font-semibold px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20" id="badgeCompareCrPeriod">Năm 2026</span>
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-[11px] text-amber-400 font-semibold px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20" id="badgeCompareCrPeriod">Năm 2026</span>
+                                <div class="inline-flex items-center bg-slate-950 p-0.5 rounded border border-slate-800 text-[10px]">
+                                    <button onclick="setTyTrongChartGranularity('cr', 'year')" id="btn-gran-cr-year" class="px-2 py-0.5 rounded font-semibold transition-all bg-amber-500/20 text-amber-300">Cả năm</button>
+                                    <button onclick="setTyTrongChartGranularity('cr', 'month')" id="btn-gran-cr-month" class="px-2 py-0.5 rounded font-semibold transition-all text-slate-400 hover:text-slate-200">Theo tháng</button>
+                                </div>
+                            </div>
                         </div>
                         <p class="text-[11px] text-slate-400 mb-2">Đánh giá sức mạnh phễu chuyển đổi ra học viên mới (TE new) từ lead của từng dòng sản phẩm</p>
                         <div class="h-72 relative">
@@ -1372,7 +1397,13 @@
                                 <i data-lucide="pie-chart" class="w-4 h-4 text-pink-400"></i>
                                 <span>5. So Sánh Tỷ Lệ CP / DT (%) & Ngưỡng An Toàn</span>
                             </h2>
-                            <span class="text-[11px] text-pink-400 font-semibold px-2 py-0.5 rounded bg-pink-500/10 border border-pink-500/20" id="badgeCompareCpDtPeriod">Năm 2026</span>
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-[11px] text-pink-400 font-semibold px-2 py-0.5 rounded bg-pink-500/10 border border-pink-500/20" id="badgeCompareCpDtPeriod">Năm 2026</span>
+                                <div class="inline-flex items-center bg-slate-950 p-0.5 rounded border border-slate-800 text-[10px]">
+                                    <button onclick="setTyTrongChartGranularity('cp_dt', 'year')" id="btn-gran-cp_dt-year" class="px-2 py-0.5 rounded font-semibold transition-all bg-pink-500/20 text-pink-300">Cả năm</button>
+                                    <button onclick="setTyTrongChartGranularity('cp_dt', 'month')" id="btn-gran-cp_dt-month" class="px-2 py-0.5 rounded font-semibold transition-all text-slate-400 hover:text-slate-200">Theo tháng</button>
+                                </div>
+                            </div>
                         </div>
                         <div class="flex items-center gap-4 text-[10px] text-slate-400 mb-2">
                             <span class="flex items-center gap-1"><span class="w-2 h-2 rounded bg-emerald-400"></span> Tối ưu (&lt; 15%)</span>
@@ -5741,24 +5772,109 @@
         let currentTyTrongViewMode = 'compare'; // 'compare' or 'trend'
         selectedTyTrongProducts = ['P1', 'P2', 'P3', 'P0'];
 
-        // PRODUCT_PALETTE already declared
- [
-            '#10b981', '#0ea5e9', '#8b5cf6', '#f59e0b', '#ec4899', 
-            '#06b6d4', '#6366f1', '#14b8a6', '#f97316', '#a855f7',
-            '#e11d48', '#84cc16', '#3b82f6', '#d946ef', '#64748b'
+        const TY_TRONG_PRODUCT_COLORS = {
+            'P1': '#10b981', // Emerald green
+            'SE HS-SV-NDL': '#10b981',
+            'Software Engineering': '#10b981',
+            'Branding IT': '#34d399',
+
+            'P2': '#0ea5e9', // Sky blue
+            'xUP': '#0ea5e9',
+            'xUp for IT': '#38bdf8',
+            'xUP - nâng cao năng lực': '#0ea5e9',
+            'Brain Engineering': '#0284c7',
+            'xSeri': '#60a5fa',
+
+            'P3': '#8b5cf6', // Violet
+            'Fresher': '#8b5cf6',
+            'Data analysis': '#06b6d4',
+            'Tester': '#a855f7',
+            'Business Analyst': '#14b8a6',
+
+            'P0': '#f59e0b', // Amber
+            'FUNiX Wings': '#f59e0b',
+            'Kid': '#fbbf24',
+            'Kid - Scratch': '#f97316',
+
+            'P4': '#f43f5e', // Rose red
+            'Fintech': '#f43f5e',
+            'Chứng chỉ': '#fb7185',
+
+            'Other': '#64748b', // Slate gray
+            'Lead khác': '#64748b',
+            'Tổng': '#94a3b8'
+        };
+
+        const TY_TRONG_FALLBACK_PALETTE = [
+            '#10b981', '#0ea5e9', '#8b5cf6', '#f59e0b', '#f43f5e',
+            '#06b6d4', '#ec4899', '#14b8a6', '#6366f1', '#f97316',
+            '#a855f7', '#84cc16', '#3b82f6', '#d946ef', '#64748b'
         ];
 
         function getProductColor(prodName, index) {
-            if (prodName === 'Software Engineering' || prodName === 'SE HS-SV-NDL') return '#10b981';
-            if (prodName === 'xUP' || prodName === 'xUp for IT') return '#0ea5e9';
-            if (prodName === 'xSeri' || prodName === 'P2') return '#8b5cf6';
-            if (prodName === 'Fresher' || prodName === 'P3') return '#f59e0b';
-            if (prodName === 'Kid' || prodName === 'FUNiX Wings') return '#ec4899';
-            if (prodName === 'Data analysis') return '#06b6d4';
-            if (prodName === 'Tester') return '#f43f5e';
-            if (prodName === 'Business Analyst') return '#14b8a6';
-            if (prodName === 'Tổng') return '#94a3b8';
-            return PRODUCT_PALETTE[index % PRODUCT_PALETTE.length];
+            if (prodName && TY_TRONG_PRODUCT_COLORS[prodName]) return TY_TRONG_PRODUCT_COLORS[prodName];
+            const idx = (typeof index === 'number' && !isNaN(index)) ? Math.abs(index) : 0;
+            return TY_TRONG_FALLBACK_PALETTE[idx % TY_TRONG_FALLBACK_PALETTE.length];
+        }
+
+        let tyTrongChartGranularity = {
+            rev: 'year',
+            cpl: 'year',
+            cr: 'year',
+            cp_dt: 'year'
+        };
+
+        function setTyTrongChartGranularity(chartKey, gran) {
+            tyTrongChartGranularity[chartKey] = gran;
+            renderTyTrongTab();
+        }
+
+        function setTyTrongMasterGranularity(gran) {
+            tyTrongChartGranularity.rev = gran;
+            tyTrongChartGranularity.cpl = gran;
+            tyTrongChartGranularity.cr = gran;
+            tyTrongChartGranularity.cp_dt = gran;
+            renderTyTrongTab();
+        }
+
+        function updateTyTrongGranularityButtons() {
+            const chartConfigs = [
+                { key: 'rev', color: 'emerald' },
+                { key: 'cpl', color: 'sky' },
+                { key: 'cr', color: 'amber' },
+                { key: 'cp_dt', color: 'pink' }
+            ];
+            chartConfigs.forEach(cfg => {
+                const isMonth = tyTrongChartGranularity[cfg.key] === 'month';
+                const btnYear = document.getElementById(`btn-gran-${cfg.key}-year`);
+                const btnMonth = document.getElementById(`btn-gran-${cfg.key}-month`);
+                if (btnYear && btnMonth) {
+                    if (isMonth) {
+                        btnYear.className = 'px-2 py-0.5 rounded font-semibold transition-all text-slate-400 hover:text-slate-200';
+                        btnMonth.className = `px-2 py-0.5 rounded font-semibold transition-all bg-${cfg.color}-500/20 text-${cfg.color}-300`;
+                    } else {
+                        btnYear.className = `px-2 py-0.5 rounded font-semibold transition-all bg-${cfg.color}-500/20 text-${cfg.color}-300`;
+                        btnMonth.className = 'px-2 py-0.5 rounded font-semibold transition-all text-slate-400 hover:text-slate-200';
+                    }
+                }
+            });
+
+            const isAllMonth = Object.values(tyTrongChartGranularity).every(v => v === 'month');
+            const isAllYear = Object.values(tyTrongChartGranularity).every(v => v === 'year');
+            const btnMasterYear = document.getElementById('btn-master-gran-year');
+            const btnMasterMonth = document.getElementById('btn-master-gran-month');
+            if (btnMasterYear && btnMasterMonth) {
+                if (isAllMonth) {
+                    btnMasterYear.className = 'px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 font-semibold border border-transparent transition-all';
+                    btnMasterMonth.className = 'px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40 transition-all';
+                } else if (isAllYear) {
+                    btnMasterYear.className = 'px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40 transition-all';
+                    btnMasterMonth.className = 'px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 font-semibold border border-transparent transition-all';
+                } else {
+                    btnMasterYear.className = 'px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 font-semibold border border-transparent transition-all';
+                    btnMasterMonth.className = 'px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 font-semibold border border-transparent transition-all';
+                }
+            }
         }
 
         function setTyTrongPeriod(period) {
@@ -5912,11 +6028,14 @@
             const bCpl = document.getElementById('badgeCompareCplPeriod');
             const bCr = document.getElementById('badgeCompareCrPeriod');
             const bCpDt = document.getElementById('badgeCompareCpDtPeriod');
-            if (bRev) bRev.innerText = periodName;
+            if (bRev) bRev.innerText = `${periodName} (${tyTrongChartGranularity.rev === 'month' ? '12 Tháng' : 'Cả năm'})`;
             if (bDonut) bDonut.innerText = periodName;
-            if (bCpl) bCpl.innerText = periodName;
-            if (bCr) bCr.innerText = periodName;
-            if (bCpDt) bCpDt.innerText = periodName;
+            if (bCpl) bCpl.innerText = `${periodName} (${tyTrongChartGranularity.cpl === 'month' ? '12 Tháng' : 'Cả năm'})`;
+            if (bCr) bCr.innerText = `${periodName} (${tyTrongChartGranularity.cr === 'month' ? '12 Tháng' : 'Cả năm'})`;
+            if (bCpDt) bCpDt.innerText = `${periodName} (${tyTrongChartGranularity.cp_dt === 'month' ? '12 Tháng' : 'Cả năm'})`;
+
+            // Update Granularity Button styles
+            updateTyTrongGranularityButtons();
 
             // Update Badges in trend view
             const tRev = document.getElementById('chartTyTrongRevPeriodBadge');
@@ -6055,45 +6174,92 @@
                 const prodRevs = sortedByRev.map(x => x.rev / 1e6); // in Millions
                 const prodColors = sortedByRev.map(x => x.color);
 
+                // Clean labels for month cluster view: T01, T02... or T1/2023...
+                const clusterMonthLabels = periodCols.map(col => {
+                    let lbl = col.label || col.key;
+                    if (currentTyTrongPeriod.startsWith('20')) {
+                        lbl = lbl.replace('/' + currentTyTrongPeriod, '');
+                    }
+                    return lbl;
+                });
+
                 // 1. COMPARISON CHART 1: REVENUE BAR CHART
                 if (chartTyTrongRevBar) chartTyTrongRevBar.destroy();
                 const ctxRevBar = document.getElementById('chartTyTrongRevBar').getContext('2d');
-                chartTyTrongRevBar = new Chart(ctxRevBar, {
-                    type: 'bar',
-                    data: {
-                        labels: prodLabels,
-                        datasets: [{
-                            label: 'Doanh Thu (Triệu VNĐ)',
-                            data: prodRevs,
-                            backgroundColor: prodColors.map(c => c + 'cc'),
-                            borderColor: prodColors,
+                if (tyTrongChartGranularity.rev === 'month') {
+                    // Clustered 12-month bar chart
+                    const revDatasets = selectedTyTrongProducts.map((p, idx) => {
+                        const color = getProductColor(p, idx);
+                        return {
+                            label: p,
+                            data: periodCols.map(col => ((tyData.products[p]?.['Doanh thu']?.[col.key]?.val || 0) / 1e6)),
+                            backgroundColor: color + 'cc',
+                            borderColor: color,
                             borderWidth: 1.5,
-                            borderRadius: 6
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        indexAxis: sortedByRev.length > 5 ? 'y' : 'x',
-                        scales: {
-                            x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: 'rgba(51, 65, 85, 0.2)' } },
-                            y: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: 'rgba(51, 65, 85, 0.2)' } }
+                            borderRadius: 4
+                        };
+                    });
+                    chartTyTrongRevBar = new Chart(ctxRevBar, {
+                        type: 'bar',
+                        data: {
+                            labels: clusterMonthLabels,
+                            datasets: revDatasets
                         },
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                callbacks: {
-                                    label: ctx => {
-                                        const val = ctx.parsed.y !== undefined && ctx.parsed.y !== null ? ctx.parsed.y : ctx.parsed.x;
-                                        const actualVnd = val * 1e6;
-                                        const pct = aggregateRev > 0 ? ((actualVnd / aggregateRev) * 100).toFixed(1) : '0';
-                                        return 'Doanh Thu: ' + formatVnCurrency(actualVnd) + ' (' + pct + '% nhóm chọn)';
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } },
+                                y: { ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v.toLocaleString('vi-VN') + 'M' }, grid: { color: 'rgba(51, 65, 85, 0.2)' } }
+                            },
+                            plugins: {
+                                legend: { display: true, position: 'top', labels: { color: '#cbd5e1', font: { size: 10 }, boxWidth: 10, padding: 8 } },
+                                tooltip: {
+                                    callbacks: {
+                                        label: ctx => ctx.dataset.label + ': ' + formatVnCurrency((ctx.parsed.y || 0) * 1e6)
                                     }
                                 }
                             }
                         }
-                    }
-                });
+                    });
+                } else {
+                    chartTyTrongRevBar = new Chart(ctxRevBar, {
+                        type: 'bar',
+                        data: {
+                            labels: prodLabels,
+                            datasets: [{
+                                label: 'Doanh Thu (Triệu VNĐ)',
+                                data: prodRevs,
+                                backgroundColor: prodColors.map(c => c + 'cc'),
+                                borderColor: prodColors,
+                                borderWidth: 1.5,
+                                borderRadius: 6
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            indexAxis: sortedByRev.length > 5 ? 'y' : 'x',
+                            scales: {
+                                x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: 'rgba(51, 65, 85, 0.2)' } },
+                                y: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: 'rgba(51, 65, 85, 0.2)' } }
+                            },
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        label: ctx => {
+                                            const val = ctx.parsed.y !== undefined && ctx.parsed.y !== null ? ctx.parsed.y : ctx.parsed.x;
+                                            const actualVnd = val * 1e6;
+                                            const pct = aggregateRev > 0 ? ((actualVnd / aggregateRev) * 100).toFixed(1) : '0';
+                                            return 'Doanh Thu: ' + formatVnCurrency(actualVnd) + ' (' + pct + '% nhóm chọn)';
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
 
                 // 2. COMPARISON CHART 2: REVENUE DONUT CHART
                 if (chartTyTrongRevDonut) chartTyTrongRevDonut.destroy();
@@ -6135,107 +6301,230 @@
                 // 3. COMPARISON CHART 3: CPL BAR CHART
                 if (chartTyTrongCplBar) chartTyTrongCplBar.destroy();
                 const ctxCplBar = document.getElementById('chartTyTrongCplBar').getContext('2d');
-                const sortedByCpl = [...productStats].sort((a, b) => a.cpl - b.cpl); // lowest to highest
-                chartTyTrongCplBar = new Chart(ctxCplBar, {
-                    type: 'bar',
-                    data: {
-                        labels: sortedByCpl.map(x => x.name),
-                        datasets: [{
-                            label: 'CPL (VNĐ)',
-                            data: sortedByCpl.map(x => x.cpl),
-                            backgroundColor: sortedByCpl.map(x => x.cpl <= 100000 ? 'rgba(16, 185, 129, 0.8)' : (x.cpl <= 180000 ? 'rgba(245, 158, 11, 0.8)' : 'rgba(244, 63, 94, 0.8)')),
-                            borderColor: sortedByCpl.map(x => x.cpl <= 100000 ? '#10b981' : (x.cpl <= 180000 ? '#f59e0b' : '#f43f5e')),
+                if (tyTrongChartGranularity.cpl === 'month') {
+                    // Clustered 12-month bar chart
+                    const cplDatasets = selectedTyTrongProducts.map((p, idx) => {
+                        const color = getProductColor(p, idx);
+                        return {
+                            label: p,
+                            data: periodCols.map(col => {
+                                const cpl = tyData.products[p]?.['CPL']?.[col.key]?.val || 0;
+                                return Math.round(cpl);
+                            }),
+                            backgroundColor: color + 'cc',
+                            borderColor: color,
                             borderWidth: 1.5,
-                            borderRadius: 6
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            x: { ticks: { color: '#94a3b8', font: { size: 10 }, maxRotation: 45 }, grid: { display: false } },
-                            y: { ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => Math.round(v/1000) + 'k' }, grid: { color: 'rgba(51, 65, 85, 0.2)' } }
+                            borderRadius: 4
+                        };
+                    });
+                    chartTyTrongCplBar = new Chart(ctxCplBar, {
+                        type: 'bar',
+                        data: {
+                            labels: clusterMonthLabels,
+                            datasets: cplDatasets
                         },
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                callbacks: {
-                                    label: ctx => 'CPL: ' + Math.round(ctx.parsed.y).toLocaleString('vi-VN') + ' đ (Leads: ' + (sortedByCpl[ctx.dataIndex]?.leads || 0) + ')'
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } },
+                                y: { ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => Math.round(v/1000) + 'k' }, grid: { color: 'rgba(51, 65, 85, 0.2)' } }
+                            },
+                            plugins: {
+                                legend: { display: true, position: 'top', labels: { color: '#cbd5e1', font: { size: 10 }, boxWidth: 10, padding: 8 } },
+                                tooltip: {
+                                    callbacks: {
+                                        label: ctx => ctx.dataset.label + ' CPL: ' + Math.round(ctx.parsed.y || 0).toLocaleString('vi-VN') + ' đ'
+                                    }
                                 }
                             }
                         }
-                    }
-                });
+                    });
+                } else {
+                    const sortedByCpl = [...productStats].sort((a, b) => a.cpl - b.cpl); // lowest to highest
+                    chartTyTrongCplBar = new Chart(ctxCplBar, {
+                        type: 'bar',
+                        data: {
+                            labels: sortedByCpl.map(x => x.name),
+                            datasets: [{
+                                label: 'CPL (VNĐ)',
+                                data: sortedByCpl.map(x => x.cpl),
+                                backgroundColor: sortedByCpl.map(x => x.color + 'cc'),
+                                borderColor: sortedByCpl.map(x => x.color),
+                                borderWidth: 1.5,
+                                borderRadius: 6
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                x: { ticks: { color: '#94a3b8', font: { size: 10 }, maxRotation: 45 }, grid: { display: false } },
+                                y: { ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => Math.round(v/1000) + 'k' }, grid: { color: 'rgba(51, 65, 85, 0.2)' } }
+                            },
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        label: ctx => 'CPL: ' + Math.round(ctx.parsed.y).toLocaleString('vi-VN') + ' đ (Leads: ' + (sortedByCpl[ctx.dataIndex]?.leads || 0) + ')'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
 
                 // 4. COMPARISON CHART 4: CR TE NEW BAR CHART
                 if (chartTyTrongCrBar) chartTyTrongCrBar.destroy();
                 const ctxCrBar = document.getElementById('chartTyTrongCrBar').getContext('2d');
-                const sortedByCr = [...productStats].sort((a, b) => b.cr - a.cr); // highest to lowest
-                chartTyTrongCrBar = new Chart(ctxCrBar, {
-                    type: 'bar',
-                    data: {
-                        labels: sortedByCr.map(x => x.name),
-                        datasets: [{
-                            label: 'CR TE new (%)',
-                            data: sortedByCr.map(x => x.cr),
-                            backgroundColor: sortedByCr.map(x => x.cr >= 10 ? 'rgba(16, 185, 129, 0.85)' : (x.cr >= 4 ? 'rgba(14, 165, 233, 0.85)' : 'rgba(245, 158, 11, 0.85)')),
-                            borderColor: sortedByCr.map(x => x.cr >= 10 ? '#10b981' : (x.cr >= 4 ? '#0ea5e9' : '#f59e0b')),
+                if (tyTrongChartGranularity.cr === 'month') {
+                    // Clustered 12-month bar chart
+                    const crDatasets = selectedTyTrongProducts.map((p, idx) => {
+                        const color = getProductColor(p, idx);
+                        return {
+                            label: p,
+                            data: periodCols.map(col => {
+                                const cr = tyData.products[p]?.['CR TE new']?.[col.key]?.val || 0;
+                                return parseFloat(cr.toFixed(2));
+                            }),
+                            backgroundColor: color + 'cc',
+                            borderColor: color,
                             borderWidth: 1.5,
-                            borderRadius: 6
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            x: { ticks: { color: '#94a3b8', font: { size: 10 }, maxRotation: 45 }, grid: { display: false } },
-                            y: { ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v.toFixed(1) + '%' }, grid: { color: 'rgba(51, 65, 85, 0.2)' } }
+                            borderRadius: 4
+                        };
+                    });
+                    chartTyTrongCrBar = new Chart(ctxCrBar, {
+                        type: 'bar',
+                        data: {
+                            labels: clusterMonthLabels,
+                            datasets: crDatasets
                         },
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                callbacks: {
-                                    label: ctx => 'CR TE new: ' + ctx.parsed.y.toFixed(2) + '% (TE new: ' + (sortedByCr[ctx.dataIndex]?.teNew || 0) + ')'
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } },
+                                y: { ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v.toFixed(1) + '%' }, grid: { color: 'rgba(51, 65, 85, 0.2)' } }
+                            },
+                            plugins: {
+                                legend: { display: true, position: 'top', labels: { color: '#cbd5e1', font: { size: 10 }, boxWidth: 10, padding: 8 } },
+                                tooltip: {
+                                    callbacks: {
+                                        label: ctx => ctx.dataset.label + ' CR TE new: ' + (ctx.parsed.y || 0).toFixed(2) + '%'
+                                    }
                                 }
                             }
                         }
-                    }
-                });
+                    });
+                } else {
+                    const sortedByCr = [...productStats].sort((a, b) => b.cr - a.cr); // highest to lowest
+                    chartTyTrongCrBar = new Chart(ctxCrBar, {
+                        type: 'bar',
+                        data: {
+                            labels: sortedByCr.map(x => x.name),
+                            datasets: [{
+                                label: 'CR TE new (%)',
+                                data: sortedByCr.map(x => x.cr),
+                                backgroundColor: sortedByCr.map(x => x.color + 'cc'),
+                                borderColor: sortedByCr.map(x => x.color),
+                                borderWidth: 1.5,
+                                borderRadius: 6
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                x: { ticks: { color: '#94a3b8', font: { size: 10 }, maxRotation: 45 }, grid: { display: false } },
+                                y: { ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v.toFixed(1) + '%' }, grid: { color: 'rgba(51, 65, 85, 0.2)' } }
+                            },
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        label: ctx => 'CR TE new: ' + ctx.parsed.y.toFixed(2) + '% (TE new: ' + (sortedByCr[ctx.dataIndex]?.teNew || 0) + ')'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
 
                 // 5. COMPARISON CHART 5: CP / DT BAR CHART
                 if (chartTyTrongCpDtBar) chartTyTrongCpDtBar.destroy();
                 const ctxCpDtBar = document.getElementById('chartTyTrongCpDtBar').getContext('2d');
-                const sortedByCpDt = [...productStats].sort((a, b) => a.cp_dt - b.cp_dt); // lowest to highest
-                chartTyTrongCpDtBar = new Chart(ctxCpDtBar, {
-                    type: 'bar',
-                    data: {
-                        labels: sortedByCpDt.map(x => x.name),
-                        datasets: [{
-                            label: 'CP / DT (%)',
-                            data: sortedByCpDt.map(x => x.cp_dt),
-                            backgroundColor: sortedByCpDt.map(x => x.cp_dt <= 15 ? 'rgba(16, 185, 129, 0.85)' : (x.cp_dt <= 25 ? 'rgba(245, 158, 11, 0.85)' : 'rgba(244, 63, 94, 0.85)')),
-                            borderColor: sortedByCpDt.map(x => x.cp_dt <= 15 ? '#10b981' : (x.cp_dt <= 25 ? '#f59e0b' : '#f43f5e')),
+                if (tyTrongChartGranularity.cp_dt === 'month') {
+                    // Clustered 12-month bar chart
+                    const cpDtDatasets = selectedTyTrongProducts.map((p, idx) => {
+                        const color = getProductColor(p, idx);
+                        return {
+                            label: p,
+                            data: periodCols.map(col => {
+                                const cp_dt = tyData.products[p]?.['CP/DT']?.[col.key]?.val || 0;
+                                return parseFloat(cp_dt.toFixed(1));
+                            }),
+                            backgroundColor: color + 'cc',
+                            borderColor: color,
                             borderWidth: 1.5,
-                            borderRadius: 6
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            x: { ticks: { color: '#94a3b8', font: { size: 10 }, maxRotation: 45 }, grid: { display: false } },
-                            y: { ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v.toFixed(0) + '%' }, grid: { color: 'rgba(51, 65, 85, 0.2)' } }
+                            borderRadius: 4
+                        };
+                    });
+                    chartTyTrongCpDtBar = new Chart(ctxCpDtBar, {
+                        type: 'bar',
+                        data: {
+                            labels: clusterMonthLabels,
+                            datasets: cpDtDatasets
                         },
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                callbacks: {
-                                    label: ctx => 'CP / DT: ' + ctx.parsed.y.toFixed(1) + '% (Chi phí: ' + formatVnCurrency(sortedByCpDt[ctx.dataIndex]?.cost || 0) + ')'
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } },
+                                y: { ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v.toFixed(0) + '%' }, grid: { color: 'rgba(51, 65, 85, 0.2)' } }
+                            },
+                            plugins: {
+                                legend: { display: true, position: 'top', labels: { color: '#cbd5e1', font: { size: 10 }, boxWidth: 10, padding: 8 } },
+                                tooltip: {
+                                    callbacks: {
+                                        label: ctx => ctx.dataset.label + ' CP/DT: ' + (ctx.parsed.y || 0).toFixed(1) + '%'
+                                    }
                                 }
                             }
                         }
-                    }
-                });
+                    });
+                } else {
+                    const sortedByCpDt = [...productStats].sort((a, b) => a.cp_dt - b.cp_dt); // lowest to highest
+                    chartTyTrongCpDtBar = new Chart(ctxCpDtBar, {
+                        type: 'bar',
+                        data: {
+                            labels: sortedByCpDt.map(x => x.name),
+                            datasets: [{
+                                label: 'CP / DT (%)',
+                                data: sortedByCpDt.map(x => x.cp_dt),
+                                backgroundColor: sortedByCpDt.map(x => x.color + 'cc'),
+                                borderColor: sortedByCpDt.map(x => x.color),
+                                borderWidth: 1.5,
+                                borderRadius: 6
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                x: { ticks: { color: '#94a3b8', font: { size: 10 }, maxRotation: 45 }, grid: { display: false } },
+                                y: { ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v.toFixed(0) + '%' }, grid: { color: 'rgba(51, 65, 85, 0.2)' } }
+                            },
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        label: ctx => 'CP / DT: ' + ctx.parsed.y.toFixed(1) + '% (Chi phí: ' + formatVnCurrency(sortedByCpDt[ctx.dataIndex]?.cost || 0) + ')'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
 
                 // 6. COMPARISON CHART 6: BCG EFFICIENCY BUBBLE CHART
                 if (chartTyTrongBcgBubble) chartTyTrongBcgBubble.destroy();
@@ -7035,7 +7324,7 @@
             if (window.lucide) lucide.createIcons();
         }
 
-        const CURRENT_APP_BUILD = "v2026.10.19.v8.1";
+        const CURRENT_APP_BUILD = "v2026.10.19.v8.2";
 
         function forceClearCacheAndReload() {
             try {
