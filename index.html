@@ -58,7 +58,7 @@
             border-color: #38bdf8;
         }
     </style>
-    <script src="olap_data_bundle.js?v=20261019_v6"></script>
+    <script src="olap_data_bundle.js?v=20261019_v8"></script>
 </head>
 <body class="min-h-full flex flex-col font-sans bg-slate-950 text-slate-100 antialiased custom-scrollbar">
 
@@ -539,6 +539,14 @@
                 <span class="w-2 h-2 rounded-full bg-pink-400"></span>
                 <span>Kênh MKT × Dòng SP (Chu kỳ bán hàng)</span>
             </button>
+            <button type="button" onclick="setOlapPreset('KHTS_LEAD_X_KHTS_DNE_REV')" id="preset-btn-7" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700 transition-all flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+                <span>Loại KHTS Lead × Loại KHTS DNE (Doanh thu)</span>
+            </button>
+            <button type="button" onclick="setOlapPreset('DONGSP_LEAD_X_DONGSP_DNE_REV')" id="preset-btn-8" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700 transition-all flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-teal-400"></span>
+                <span>Dòng SP Lead × Dòng SP DNE (Dịch chuyển DT)</span>
+            </button>
         </div>
     </section>
 
@@ -574,7 +582,10 @@
                 <label class="block text-[11px] font-semibold text-slate-400 mb-1">Chiều hàng (Row Dim)</label>
                 <select id="olapRowDim" onchange="renderOlapMatrix()" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none">
                     <option value="channel">Kênh Marketing (Nguồn TT)</option>
-                    <option value="dongSp">Dòng SP (P0 - P4, Other)</option>
+                    <option value="khtsLead">Loại KHTS của Lead (MKT)</option>
+                    <option value="dongSpLead">Dòng SP Lead (MKT)</option>
+                    <option value="khtsDne">Loại KHTS của DNE (Doanh thu)</option>
+                    <option value="dongSp">Dòng SP DNE (Doanh thu)</option>
                     <option value="course">Khóa học (Cột P)</option>
                     <option value="mid">MID (Người chạy QC)</option>
                     <option value="hannix">Nhân sự Sales (Hannix)</option>
@@ -598,7 +609,10 @@
             <div>
                 <label class="block text-[11px] font-semibold text-slate-400 mb-1">Chiều cột (Col Dim)</label>
                 <select id="olapColDim" onchange="renderOlapMatrix()" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none">
-                    <option value="dongSp">Dòng SP (P0 - P4, Other)</option>
+                    <option value="dongSp">Dòng SP DNE (Doanh thu)</option>
+                    <option value="khtsDne">Loại KHTS của DNE (Doanh thu)</option>
+                    <option value="dongSpLead">Dòng SP Lead (MKT)</option>
+                    <option value="khtsLead">Loại KHTS của Lead (MKT)</option>
                     <option value="course">Khóa học (Cột P)</option>
                     <option value="mid">MID (Người chạy QC)</option>
                     <option value="channel">Kênh Marketing (Nguồn TT)</option>
@@ -949,6 +963,7 @@
                                     <th class="py-2.5 px-3 text-right">Chi Phí (VNĐ)</th>
                                     <th class="py-2.5 px-3 text-right">CPL (VNĐ)</th>
                                     <th class="py-2.5 px-3 text-right">DT All Nguồn (VNĐ)</th>
+                                    <th class="py-2.5 px-3 text-right text-pink-400">Tỷ lệ CP/DT</th>
                                 </tr>
                             </thead>
                             <tbody id="mktProductTableBody" class="divide-y divide-slate-800/60">
@@ -3660,18 +3675,21 @@
         }
 
         const DIM_MAPPINGS = {
-            channel:    { name: 'Kênh Marketing',      dtIdx: 1,  leadIdx: 1,  lookup: 'ch' },
-            dongSp:     { name: 'Dòng SP',             dtIdx: 3,  leadIdx: 3,  lookup: 'dsp' },
-            course:     { name: 'Khóa học',            dtIdx: 4,  leadIdx: 4,  lookup: 'c' },
-            mid:        { name: 'MID (Người chạy QC)', dtIdx: 5,  leadIdx: 5,  lookup: 'mid' },
-            hannix:     { name: 'Nhân sự Sales',       dtIdx: 6,  leadIdx: 6,  lookup: 'h' },
-            dept:       { name: 'Phòng Tuyển Sinh',    dtIdx: 6,  leadIdx: 6,  lookup: 'dept', isDept: true },
-            leadMonth:  { name: 'Tháng tạo lead',      dtIdx: 14, leadIdx: 0,  lookup: 'lm' },
-            dtMonth:    { name: 'Tháng tạo DT',        dtIdx: 0,  leadIdx: -1, lookup: 'm' },
-            studentId:  { name: 'Mã nhập học',         dtIdx: 11, leadIdx: -1, lookup: 'id' },
-            target:     { name: 'Đối tượng học viên',  dtIdx: 7,  leadIdx: 7,  lookup: 'tg' },
-            leadSource: { name: 'Nguồn Lead',          dtIdx: 2,  leadIdx: 2,  lookup: 'ls' },
-            status:     { name: 'Trạng thái Lead',     dtIdx: -1, leadIdx: 8,  lookup: 'st' }
+            channel:    { name: 'Kênh Marketing',              dtIdx: 1,  leadIdx: 1,  lookup: 'ch' },
+            dongSp:     { name: 'Dòng SP DNE (Doanh thu)',     dtIdx: 3,  leadIdx: 3,  lookup: 'dsp' },
+            dongSpLead: { name: 'Dòng SP Lead (MKT)',          dtIdx: 16, leadIdx: 3,  lookup: 'dsp' },
+            course:     { name: 'Khóa học',                    dtIdx: 4,  leadIdx: 4,  lookup: 'c' },
+            khtsDne:    { name: 'Loại KHTS của DNE (Doanh thu)', dtIdx: 4, leadIdx: -1, lookup: 'c' },
+            khtsLead:   { name: 'Loại KHTS của Lead (MKT)',    dtIdx: 15, leadIdx: 4,  lookup: 'c' },
+            mid:        { name: 'MID (Người chạy QC)',         dtIdx: 5,  leadIdx: 5,  lookup: 'mid' },
+            hannix:     { name: 'Nhân sự Sales',               dtIdx: 6,  leadIdx: 6,  lookup: 'h' },
+            dept:       { name: 'Phòng Tuyển Sinh',            dtIdx: 6,  leadIdx: 6,  lookup: 'dept', isDept: true },
+            leadMonth:  { name: 'Tháng tạo lead',              dtIdx: 14, leadIdx: 0,  lookup: 'lm' },
+            dtMonth:    { name: 'Tháng tạo DT',                dtIdx: 0,  leadIdx: -1, lookup: 'm' },
+            studentId:  { name: 'Mã nhập học',                 dtIdx: 11, leadIdx: -1, lookup: 'id' },
+            target:     { name: 'Đối tượng học viên',          dtIdx: 7,  leadIdx: 7,  lookup: 'tg' },
+            leadSource: { name: 'Nguồn Lead',                  dtIdx: 2,  leadIdx: 2,  lookup: 'ls' },
+            status:     { name: 'Trạng thái Lead',             dtIdx: -1, leadIdx: 8,  lookup: 'st' }
         };
 
         function setOlapPreset(presetKey) {
@@ -3679,7 +3697,7 @@
             const p2 = document.getElementById('olapColDim');
             const pf = document.getElementById('olapFactMetric');
 
-            for (let i = 1; i <= 6; i++) {
+            for (let i = 1; i <= 8; i++) {
                 const b = document.getElementById('preset-btn-' + i);
                 if (b) b.className = 'px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700 transition-all flex items-center gap-1.5';
             }
@@ -3702,6 +3720,12 @@
             } else if (presetKey === 'CHANNEL_X_DONGSP_CYCLE') {
                 p1.value = 'channel'; p2.value = 'dongSp'; pf.value = 'cycleAvg';
                 document.getElementById('preset-btn-6').className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-pink-500 text-white border border-pink-400 transition-all flex items-center gap-1.5';
+            } else if (presetKey === 'KHTS_LEAD_X_KHTS_DNE_REV') {
+                p1.value = 'khtsLead'; p2.value = 'khtsDne'; pf.value = 'rev';
+                document.getElementById('preset-btn-7').className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-500 text-white border border-rose-400 transition-all flex items-center gap-1.5';
+            } else if (presetKey === 'DONGSP_LEAD_X_DONGSP_DNE_REV') {
+                p1.value = 'dongSpLead'; p2.value = 'dongSp'; pf.value = 'rev';
+                document.getElementById('preset-btn-8').className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-teal-500 text-slate-950 border border-teal-400 transition-all flex items-center gap-1.5';
             }
 
             renderOlapMatrix();
@@ -4157,7 +4181,9 @@
                     isCycleEligible: !isExcludedFromArpuCr(r, lookups) && (r[13] !== undefined ? r[13] === 1 : ((r[10] || 0) > 0)),
                     isArpuCrEligible: !isExcludedFromArpuCr(r, lookups),
                     days: r[10] || 0,
-                    amount: r[9]
+                    amount: r[9],
+                    khtsLead: (lookups.c && r[15] !== undefined) ? lookups.c[r[15]] : '',
+                    dongSpLead: (lookups.dsp && r[16] !== undefined) ? lookups.dsp[r[16]] : ''
                 }));
             } else {
                 records = filteredLead.map(r => ({
@@ -4172,7 +4198,9 @@
                     matchDate: '-',
                     days: 0,
                     status: lookups.st[r[8]] || '',
-                    amount: 0
+                    amount: 0,
+                    khtsLead: lookups.c[r[4]] || '',
+                    dongSpLead: lookups.dsp[r[3]] || ''
                 }));
             }
 
@@ -4185,7 +4213,9 @@
                     r.mid.toLowerCase().includes(searchVal) ||
                     r.hannix.toLowerCase().includes(searchVal) ||
                     (r.studentId && r.studentId.toLowerCase().includes(searchVal)) ||
-                    (r.matchDate && r.matchDate.toLowerCase().includes(searchVal))
+                    (r.matchDate && r.matchDate.toLowerCase().includes(searchVal)) ||
+                    (r.khtsLead && r.khtsLead.toLowerCase().includes(searchVal)) ||
+                    (r.dongSpLead && r.dongSpLead.toLowerCase().includes(searchVal))
                 );
             }
 
@@ -4213,7 +4243,8 @@
                         <th class="py-2.5 px-3">Ngày khớp GD</th>
                         <th class="py-2.5 px-3">Tháng</th>
                         <th class="py-2.5 px-3">Kênh MKT</th>
-                        <th class="py-2.5 px-3">Dòng SP</th>
+                        <th class="py-2.5 px-3" title="Dòng sản phẩm thực tế nhập học/doanh thu">Dòng SP (DNE)</th>
+                        <th class="py-2.5 px-3 text-cyan-400" title="Dòng sản phẩm ghi nhận khi tạo Lead Marketing">Dòng SP Lead (MKT)</th>
                         <th class="py-2.5 px-3">Khóa học</th>
                         <th class="py-2.5 px-3">MID</th>
                         <th class="py-2.5 px-3">Chu kỳ</th>
@@ -4254,6 +4285,7 @@
                         <td class="py-2 px-3 text-slate-400 font-mono text-xs">${r.month}</td>
                         <td class="py-2 px-3 font-medium text-slate-200">${r.channel}</td>
                         <td class="py-2 px-3 font-bold text-cyan-300">${r.dongSp}</td>
+                        <td class="py-2 px-3 font-semibold text-cyan-400">${r.dongSpLead || '-'}</td>
                         <td class="py-2 px-3 text-slate-300 max-w-xs truncate" title="${r.course}">${r.course}</td>
                         <td class="py-2 px-3 text-slate-400">${r.mid}</td>
                         <td class="py-2 px-3 font-mono text-xs">${r.type === 'Doanh Thu' ? (r.days > 0 ? `<span class="text-amber-400 font-bold">${r.days} ngày</span>` : `<span class="text-slate-500">${r.days} ngày</span>`) : '-'}</td>
@@ -5051,9 +5083,18 @@
 
             const tbody = document.getElementById('mktProductTableBody');
             if (tbody) {
-                tbody.innerHTML = prods.map(p => {
+                const totL = prods.reduce((s, p) => s + p.l, 0);
+                const totCl = prods.reduce((s, p) => s + p.cl, 0);
+                const totCost = prods.reduce((s, p) => s + p.cost, 0);
+                const totRev = prods.reduce((s, p) => s + p.rev, 0);
+                const totClPct = totL > 0 ? ((totCl / totL) * 100) : 0;
+                const totCpl = totL > 0 ? (totCost / totL) : 0;
+                const totCpDt = totRev > 0 ? ((totCost / totRev) * 100) : 0;
+
+                const rowsHtml = prods.map(p => {
                     const pClPct = p.l > 0 ? ((p.cl / p.l) * 100) : 0;
                     const pCpl = p.l > 0 ? (p.cost / p.l) : 0;
+                    const pCpDt = p.rev > 0 ? ((p.cost / p.rev) * 100) : 0;
                     return `
                         <tr class="hover:bg-slate-800/30">
                             <td class="py-2.5 px-3 font-semibold ${p.color}">${p.name}</td>
@@ -5063,9 +5104,28 @@
                             <td class="py-2.5 px-3 text-right">${formatVnCurrency(p.cost)}</td>
                             <td class="py-2.5 px-3 text-right">${Math.round(pCpl).toLocaleString('vi-VN')} đ</td>
                             <td class="py-2.5 px-3 text-right text-rose-400 font-bold">${formatVnCurrency(p.rev)}</td>
+                            <td class="py-2.5 px-3 text-right font-bold ${pCpDt > 0 ? (pCpDt <= 35 ? 'text-emerald-400' : (pCpDt <= 50 ? 'text-amber-400' : 'text-pink-400')) : 'text-slate-400'}">${pCpDt > 0 ? pCpDt.toFixed(2).replace('.', ',') + '%' : (p.cost > 0 ? 'N/A' : '0,00%')}</td>
                         </tr>
                     `;
                 }).join('');
+
+                const totalRowHtml = `
+                    <tr class="bg-slate-950/90 font-bold border-t-2 border-slate-700 text-slate-100">
+                        <td class="py-2.5 px-3 text-cyan-400 font-black uppercase flex items-center gap-1.5">
+                            <i data-lucide="calculator" class="w-3.5 h-3.5"></i>
+                            <span>TỔNG CỘNG</span>
+                        </td>
+                        <td class="py-2.5 px-3 text-right font-black">${totL.toLocaleString('vi-VN')}</td>
+                        <td class="py-2.5 px-3 text-right font-black text-emerald-400">${totCl.toLocaleString('vi-VN')}</td>
+                        <td class="py-2.5 px-3 text-right font-black ${totClPct >= 20 ? 'text-emerald-400' : 'text-amber-400'}">${totClPct.toFixed(2).replace('.', ',')}%</td>
+                        <td class="py-2.5 px-3 text-right font-black text-slate-100">${formatVnCurrency(totCost)}</td>
+                        <td class="py-2.5 px-3 text-right font-black">${Math.round(totCpl).toLocaleString('vi-VN')} đ</td>
+                        <td class="py-2.5 px-3 text-right font-black text-rose-400">${formatVnCurrency(totRev)}</td>
+                        <td class="py-2.5 px-3 text-right font-black text-pink-400 text-sm">${totCpDt.toFixed(2).replace('.', ',')}%</td>
+                    </tr>
+                `;
+
+                tbody.innerHTML = rowsHtml + totalRowHtml;
             }
 
             if (window.lucide) lucide.createIcons();
@@ -6514,12 +6574,12 @@
         const GID_LEAD_UPTODATE = "1229610676";   // Menu 2: Báo cáo Marketing Performance
         const GID_HANNIX_UPTODATE = "664750046";  // Menu 3: Báo cáo Sales Performance
         const GID_CATEGORY = "770210720";         // Tab Category (Đã đổi tên từ Product category)
-        const LOCAL_STORAGE_KEY_CAT = "FUNIX_LIVE_CATEGORY_MAP_V7";
+        const LOCAL_STORAGE_KEY_CAT = "FUNIX_LIVE_CATEGORY_MAP_V8";
 
-        const LOCAL_STORAGE_KEY_DT = "FUNIX_LIVE_DT_TRANSACTIONS_V7";
-        const LOCAL_STORAGE_KEY_MKT = "FUNIX_LIVE_MKT_DATA_V7";
-        const LOCAL_STORAGE_KEY_MKT_DAY = "FUNIX_LIVE_MKT_DAY_DATA_V7";
-        const LOCAL_STORAGE_KEY_SALES = "FUNIX_LIVE_SALES_DATA_V7";
+        const LOCAL_STORAGE_KEY_DT = "FUNIX_LIVE_DT_TRANSACTIONS_V8";
+        const LOCAL_STORAGE_KEY_MKT = "FUNIX_LIVE_MKT_DATA_V8";
+        const LOCAL_STORAGE_KEY_MKT_DAY = "FUNIX_LIVE_MKT_DAY_DATA_V8";
+        const LOCAL_STORAGE_KEY_SALES = "FUNIX_LIVE_SALES_DATA_V8";
 
         const GID_RAW_LEAD = "257094653";         // Menu 1: Tab Raw Lead (OLAP Fact Leads)
         let gvizSyncTracker = { dt: false, mkt: false, sales: false, cat: false, raw_lead: false };
