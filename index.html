@@ -58,7 +58,10 @@
             border-color: #38bdf8;
         }
     </style>
-    <script src="olap_data_bundle.js?v=20261019_v8"></script>
+    <script>
+        // Dynamic bundle loader: Tự động gắn timestamp Date.now() để luôn nạp bản mới nhất từ server, triệt tiêu 100% rủi ro cache trình duyệt
+        document.write('<script src="olap_data_bundle.js?t=' + Date.now() + '"><\/script>');
+    </script>
 </head>
 <body class="min-h-full flex flex-col font-sans bg-slate-950 text-slate-100 antialiased custom-scrollbar">
 
@@ -179,9 +182,20 @@
                     </div>
 
                     <button onclick="triggerJsonpSync()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg transition-colors border border-slate-700 flex items-center gap-1.5 text-xs font-semibold" title="Tải lại dữ liệu Realtime từ Google Sheet">
-        <i data-lucide="refresh-cw" class="w-4 h-4 text-sky-400"></i>
-        <span class="hidden sm:inline">Đồng Bộ Live</span>
-    </button>
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-sky-400"></i>
+                        <span class="hidden sm:inline">Đồng Bộ Live</span>
+                    </button>
+
+                    <button onclick="forceClearCacheAndReload()" class="p-2 bg-slate-800 hover:bg-rose-950/40 text-rose-300 hover:text-rose-200 rounded-lg transition-colors border border-slate-700 hover:border-rose-800/60 flex items-center gap-1.5 text-xs font-semibold" title="Xóa sạch cache trình duyệt & nạp lại bản mới nhất">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5 text-rose-400"></i>
+                        <span class="hidden md:inline">Xóa Cache</span>
+                    </button>
+
+                    <!-- Build Version Badge -->
+                    <span id="dashboardBuildBadge" class="hidden lg:inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-900 border border-slate-800 text-[10px] text-slate-400 font-mono" title="Phiên bản Dashboard hiện tại">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                        <span id="buildVersionText">v2026.10.19.v8.1</span>
+                    </span>
 
                     <!-- User Profile & Logout Badge -->
                     <div id="authUserInfoBadge" class="hidden flex items-center gap-2.5 pl-3 border-l border-slate-800">
@@ -194,9 +208,6 @@
                             <span class="hidden md:inline text-xs font-semibold">Đăng xuất</span>
                         </button>
                     </div>
-
-                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-                    </button>
                 </div>
             </div>
 
@@ -7024,12 +7035,54 @@
             if (window.lucide) lucide.createIcons();
         }
 
+        const CURRENT_APP_BUILD = "v2026.10.19.v8.1";
+
+        function forceClearCacheAndReload() {
+            try {
+                const authUser = sessionStorage.getItem('funix_dashboard_auth_user');
+                localStorage.clear();
+                sessionStorage.clear();
+                if (authUser) {
+                    sessionStorage.setItem('funix_dashboard_auth_user', authUser);
+                }
+            } catch(e) {
+                console.error("Cache purge error:", e);
+            }
+            const cleanUrl = window.location.origin + window.location.pathname;
+            window.location.replace(cleanUrl + '?v=' + Date.now());
+        }
+
         function initStoredData() {
-            // Bust older cache versions (V1-V6) so outdated cache never overrides fresh APP_DATA
-            ['FUNIX_LIVE_DT_TRANSACTIONS_V1','FUNIX_LIVE_DT_TRANSACTIONS_V2','FUNIX_LIVE_DT_TRANSACTIONS_V3','FUNIX_LIVE_DT_TRANSACTIONS_V4','FUNIX_LIVE_DT_TRANSACTIONS_V5','FUNIX_LIVE_DT_TRANSACTIONS_V6',
-             'FUNIX_LIVE_MKT_DATA_V1','FUNIX_LIVE_MKT_DATA_V2','FUNIX_LIVE_MKT_DATA_V3','FUNIX_LIVE_MKT_DATA_V4','FUNIX_LIVE_MKT_DATA_V5','FUNIX_LIVE_MKT_DATA_V6','FUNIX_LIVE_MKT_DAY_DATA_V6',
-             'FUNIX_LIVE_SALES_DATA_V1','FUNIX_LIVE_SALES_DATA_V2','FUNIX_LIVE_SALES_DATA_V3','FUNIX_LIVE_SALES_DATA_V4','FUNIX_LIVE_SALES_DATA_V5','FUNIX_LIVE_SALES_DATA_V6',
-             'FUNIX_LIVE_CATEGORY_MAP_V1','FUNIX_LIVE_CATEGORY_MAP_V2','FUNIX_LIVE_CATEGORY_MAP_V3','FUNIX_LIVE_CATEGORY_MAP_V4','FUNIX_LIVE_CATEGORY_MAP_V5','FUNIX_LIVE_CATEGORY_MAP_V6'].forEach(k => {
+            // Update visual badge
+            try {
+                const badgeEl = document.getElementById('buildVersionText');
+                if (badgeEl) badgeEl.textContent = CURRENT_APP_BUILD;
+            } catch(e) {}
+
+            // Check build version in localStorage to auto-purge stale cache on new releases
+            try {
+                const lastBuild = localStorage.getItem('FUNIX_DASHBOARD_BUILD_VERSION');
+                if (lastBuild !== CURRENT_APP_BUILD) {
+                    console.log(`[CacheBuster] New build detected: ${lastBuild} -> ${CURRENT_APP_BUILD}. Purging stale cache...`);
+                    const keysToRemove = [];
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const k = localStorage.key(i);
+                        if (k && (k.startsWith('FUNIX_LIVE_') || k.startsWith('FUNIX_CACHE_') || k.startsWith('FUNIX_P1_'))) {
+                            keysToRemove.push(k);
+                        }
+                    }
+                    keysToRemove.forEach(k => localStorage.removeItem(k));
+                    localStorage.setItem('FUNIX_DASHBOARD_BUILD_VERSION', CURRENT_APP_BUILD);
+                }
+            } catch(e) {
+                console.warn("Storage build check error:", e);
+            }
+
+            // Bust older cache versions (V1-V7) so outdated cache never overrides fresh APP_DATA
+            ['FUNIX_LIVE_DT_TRANSACTIONS_V1','FUNIX_LIVE_DT_TRANSACTIONS_V2','FUNIX_LIVE_DT_TRANSACTIONS_V3','FUNIX_LIVE_DT_TRANSACTIONS_V4','FUNIX_LIVE_DT_TRANSACTIONS_V5','FUNIX_LIVE_DT_TRANSACTIONS_V6','FUNIX_LIVE_DT_TRANSACTIONS_V7',
+             'FUNIX_LIVE_MKT_DATA_V1','FUNIX_LIVE_MKT_DATA_V2','FUNIX_LIVE_MKT_DATA_V3','FUNIX_LIVE_MKT_DATA_V4','FUNIX_LIVE_MKT_DATA_V5','FUNIX_LIVE_MKT_DATA_V6','FUNIX_LIVE_MKT_DATA_V7','FUNIX_LIVE_MKT_DAY_DATA_V6','FUNIX_LIVE_MKT_DAY_DATA_V7',
+             'FUNIX_LIVE_SALES_DATA_V1','FUNIX_LIVE_SALES_DATA_V2','FUNIX_LIVE_SALES_DATA_V3','FUNIX_LIVE_SALES_DATA_V4','FUNIX_LIVE_SALES_DATA_V5','FUNIX_LIVE_SALES_DATA_V6','FUNIX_LIVE_SALES_DATA_V7',
+             'FUNIX_LIVE_CATEGORY_MAP_V1','FUNIX_LIVE_CATEGORY_MAP_V2','FUNIX_LIVE_CATEGORY_MAP_V3','FUNIX_LIVE_CATEGORY_MAP_V4','FUNIX_LIVE_CATEGORY_MAP_V5','FUNIX_LIVE_CATEGORY_MAP_V6','FUNIX_LIVE_CATEGORY_MAP_V7'].forEach(k => {
                 try { localStorage.removeItem(k); } catch(e) {}
             });
             try {
