@@ -860,8 +860,8 @@
 
             <!-- KHỐI 4: CƠ CẤU KÊNH LEAD, CƠ CẤU LOẠI LEAD & BẢNG BÓC TÁCH DÒNG SẢN PHẨM -->
             <section class="space-y-6">
-                <!-- Hàng 1: 2 Biểu Đồ Donut (Kênh Lead & Loại Lead) -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Hàng 1: 3 Biểu Đồ Donut (Kênh Lead, Dòng Sản Phẩm, Loại Lead) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <!-- Donut 1: Cơ Cấu Kênh Lead (QC - Seeding - Org) -->
                     <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col justify-between">
                         <div>
@@ -882,7 +882,33 @@
                         </div>
                     </div>
 
-                    <!-- Donut 2: Cơ Cấu Loại Lead (Inbox, Lead Ads, Website, Scan FB, Cool Lead...) -->
+                    <!-- Donut 2: Cơ Cấu Dòng Sản Phẩm (P0 - P4 & Other) -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <h2 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+                                    <i data-lucide="layers" class="w-4 h-4 text-pink-400"></i>
+                                    <span>Cơ Cấu Dòng Sản Phẩm</span>
+                                </h2>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-[11px] font-semibold text-slate-400" id="mktProductCycleBadge">Kỳ chọn</span>
+                                    <div class="inline-flex rounded-lg bg-slate-950 p-0.5 border border-slate-800 text-[10px]">
+                                        <button type="button" onclick="setMktProductMetric('lead')" id="btnMktProdMetricLead" class="px-2 py-0.5 rounded font-semibold bg-pink-500 text-white transition-all">Lead</button>
+                                        <button type="button" onclick="setMktProductMetric('rev')" id="btnMktProdMetricRev" class="px-2 py-0.5 rounded font-semibold text-slate-400 hover:text-white transition-all">DT</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-[11px] text-slate-400 mb-3">Tỷ trọng đóng góp theo Dòng SP: P0, P1-SE, P2-xUP, P3, P4 & Other</p>
+                        </div>
+                        <div class="h-64 relative">
+                            <canvas id="chartMktProducts"></canvas>
+                        </div>
+                        <div class="mt-4 flex flex-wrap justify-center gap-x-2.5 gap-y-1 text-center text-xs text-slate-400 border-t border-slate-800 pt-3" id="mktProductBreakdownText">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Donut 3: Cơ Cấu Loại Lead (Inbox, Lead Ads, Website, Scan FB, Cool Lead...) -->
                     <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col justify-between">
                         <div>
                             <div class="flex items-center justify-between mb-2">
@@ -2116,7 +2142,9 @@
         let chartProductRev = null;
         let chartWeeklyRev = null;
         let chartMktChan = null;
+        let chartMktProducts = null;
         let chartMktLeadTypes = null;
+        let mktProductDonutMetric = 'lead'; // 'lead' | 'rev'
         let chartMktLeadRevenue = null;
         let chartMktLeadQuality = null;
         let chartMktMonthlyStacked = null;
@@ -4348,6 +4376,23 @@
             }
         }
 
+        function setMktProductMetric(metric) {
+            mktProductDonutMetric = metric;
+            const btnLead = document.getElementById('btnMktProdMetricLead');
+            const btnRev = document.getElementById('btnMktProdMetricRev');
+            if (btnLead && btnRev) {
+                if (metric === 'lead') {
+                    btnLead.className = 'px-2 py-0.5 rounded font-semibold bg-pink-500 text-white transition-all';
+                    btnRev.className = 'px-2 py-0.5 rounded font-semibold text-slate-400 hover:text-white transition-all';
+                } else {
+                    btnRev.className = 'px-2 py-0.5 rounded font-semibold bg-pink-500 text-white transition-all';
+                    btnLead.className = 'px-2 py-0.5 rounded font-semibold text-slate-400 hover:text-white transition-all';
+                }
+            }
+            renderMarketingTab();
+        }
+        window.setMktProductMetric = setMktProductMetric;
+
         function onMktFilterChange() {
             if (mktCycleMode === 'month') {
                 mktSelectedMonth = document.getElementById('mktSelectMonth')?.value || '2026-10';
@@ -4440,7 +4485,7 @@
             const badgeActive = document.getElementById('mktActiveCycleBadge');
             if (badgeActive) badgeActive.textContent = activeBadgeText;
 
-            ['mktChanCycleBadge', 'mktLeadTypeCycleBadge', 'mktTableMonthBadge', 'mktTrendPeriodBadge1', 'mktTrendPeriodBadge2', 'mktTrendPeriodBadge3'].forEach(id => {
+            ['mktChanCycleBadge', 'mktProductCycleBadge', 'mktLeadTypeCycleBadge', 'mktTableMonthBadge', 'mktTrendPeriodBadge1', 'mktTrendPeriodBadge2', 'mktTrendPeriodBadge3'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.textContent = activeBadgeText;
             });
@@ -4826,7 +4871,98 @@
             }
 
             // =========================================================
-            // 8. BIỂU ĐỒ 5 (MỚI): CƠ CẤU LOẠI LEAD (INBOX, LEAD ADS, WEBSITE...)
+            // 8. BIỂU ĐỒ 5 (MỚI): CƠ CẤU DÒNG SẢN PHẨM (P0 - P4 & OTHER)
+            // =========================================================
+            if (chartMktProducts) chartMktProducts.destroy();
+            const ctxProd = document.getElementById('chartMktProducts')?.getContext('2d');
+            if (ctxProd) {
+                const btnLead = document.getElementById('btnMktProdMetricLead');
+                const btnRev = document.getElementById('btnMktProdMetricRev');
+                if (btnLead && btnRev) {
+                    if (mktProductDonutMetric === 'lead') {
+                        btnLead.className = 'px-2 py-0.5 rounded font-semibold bg-pink-500 text-white transition-all';
+                        btnRev.className = 'px-2 py-0.5 rounded font-semibold text-slate-400 hover:text-white transition-all';
+                    } else {
+                        btnRev.className = 'px-2 py-0.5 rounded font-semibold bg-pink-500 text-white transition-all';
+                        btnLead.className = 'px-2 py-0.5 rounded font-semibold text-slate-400 hover:text-white transition-all';
+                    }
+                }
+
+                const prodItems = [
+                    { label: 'P0 - Wings', color: '#ec4899', lead: mData.p0Lead || 0, rev: mData.p0Rev || 0 },
+                    { label: 'P1 - SE', color: '#38bdf8', lead: mData.p1Lead || mData.seLead || 0, rev: mData.p1Rev || mData.seRev || 0 },
+                    { label: 'P2 - xUP', color: '#10b981', lead: mData.p2Lead || mData.xupLead || 0, rev: mData.p2Rev || mData.xupRev || 0 },
+                    { label: 'P3 - IT & Data', color: '#818cf8', lead: mData.p3Lead || mData.daLead || 0, rev: mData.p3Rev || mData.daRev || 0 },
+                    { label: 'P4 - Fintech/Cert', color: '#f59e0b', lead: mData.p4Lead || 0, rev: mData.p4Rev || 0 },
+                    { label: 'Other', color: '#94a3b8', lead: mData.otherLead || 0, rev: mData.otherRev || 0 }
+                ];
+
+                const isLeadMetric = (mktProductDonutMetric === 'lead');
+                const prodTotal = prodItems.reduce((s, p) => s + (isLeadMetric ? p.lead : p.rev), 0);
+
+                let prodLabels = prodItems.map(p => p.label);
+                let prodValues = prodItems.map(p => isLeadMetric ? p.lead : p.rev);
+                let prodColors = prodItems.map(p => p.color);
+
+                if (prodTotal === 0) {
+                    prodLabels = ['Chưa có phát sinh'];
+                    prodValues = [1];
+                    prodColors = ['#475569'];
+                }
+
+                chartMktProducts = new Chart(ctxProd, {
+                    type: 'doughnut',
+                    data: {
+                        labels: prodLabels,
+                        datasets: [{
+                            data: prodValues,
+                            backgroundColor: prodColors,
+                            borderColor: '#0f172a',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '58%',
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { color: '#cbd5e1', font: { size: 10 }, boxWidth: 10, padding: 8 }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: ctx => {
+                                        if (prodTotal === 0) return 'Chưa có phát sinh';
+                                        const v = ctx.parsed || 0;
+                                        const pct = ((v / prodTotal) * 100).toFixed(1);
+                                        if (isLeadMetric) {
+                                            return `${ctx.label}: ${v.toLocaleString('vi-VN')} lead (${pct}%)`;
+                                        } else {
+                                            return `${ctx.label}: ${formatVnCurrency(v)} (${pct}%)`;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                const prodBreakdownHtml = prodItems.map(p => {
+                    const val = isLeadMetric ? p.lead : p.rev;
+                    const pct = prodTotal > 0 ? ((val / prodTotal) * 100).toFixed(1) : 0;
+                    const valText = isLeadMetric ? `${val.toLocaleString('vi-VN')} lead` : formatVnCurrency(val);
+                    return `<div class="px-2 py-1 rounded bg-slate-950 border border-slate-800 text-[11px] whitespace-nowrap">
+                        <span class="font-bold" style="color: ${p.color}">${p.label}</span>: 
+                        <strong class="text-white">${valText}</strong> (${pct}%)
+                    </div>`;
+                }).join('');
+                const prodTextEl = document.getElementById('mktProductBreakdownText');
+                if (prodTextEl) prodTextEl.innerHTML = prodBreakdownHtml;
+            }
+
+            // =========================================================
+            // 9. BIỂU ĐỒ 6 (MỚI): CƠ CẤU LOẠI LEAD (INBOX, LEAD ADS, WEBSITE...)
             // =========================================================
             if (chartMktLeadTypes) chartMktLeadTypes.destroy();
             const ctxLeadTypes = document.getElementById('chartMktLeadTypes')?.getContext('2d');
