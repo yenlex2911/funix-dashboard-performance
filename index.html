@@ -57,7 +57,80 @@
             color: #ffffff;
             border-color: #38bdf8;
         }
-    </style>
+            /* =========================================================================
+           COMPACT STICKY HEADER ON SCROLL WITH HOVER DROP-DOWN
+           ========================================================================= */
+        #mainAppHeader {
+            transition: background-color 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+        }
+        #headerTopRow {
+            transition: max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1), 
+                        opacity 0.25s ease, 
+                        padding 0.3s ease, 
+                        margin 0.3s ease;
+            max-height: 250px;
+            opacity: 1;
+            overflow: hidden;
+        }
+        #headerNavTabs {
+            transition: padding 0.25s ease, border-color 0.25s ease;
+        }
+        #headerNavTabs .tab-btn {
+            transition: padding 0.2s ease, font-size 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+        }
+        #headerCompactHint {
+            display: none;
+        }
+
+        /* Compact sticky state when scrolled past 1 screen */
+        #mainAppHeader.header-compact:not(:hover) {
+            background-color: rgba(15, 23, 42, 0.94);
+            box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.6);
+            border-bottom-color: rgba(51, 65, 85, 0.8);
+        }
+        #mainAppHeader.header-compact:not(:hover) #headerTopRow {
+            max-height: 0 !important;
+            opacity: 0 !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            margin-top: 0 !important;
+            margin-bottom: 0 !important;
+            pointer-events: none;
+        }
+        #mainAppHeader.header-compact:not(:hover) #headerNavTabs {
+            border-top-color: transparent !important;
+        }
+        #mainAppHeader.header-compact:not(:hover) #headerNavTabs .tab-btn {
+            padding-top: 0.45rem !important;
+            padding-bottom: 0.45rem !important;
+            font-size: 0.8125rem !important;
+        }
+        #mainAppHeader.header-compact:not(:hover) #headerCompactHint {
+            display: inline-flex;
+        }
+
+        /* Expanded state on hover when in compact mode */
+        #mainAppHeader.header-compact:hover {
+            background-color: rgba(15, 23, 42, 0.98);
+            box-shadow: 0 20px 40px -4px rgba(0, 0, 0, 0.9);
+            border-bottom-color: rgba(56, 189, 248, 0.35);
+        }
+        #mainAppHeader.header-compact:hover #headerTopRow {
+            max-height: 250px;
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #mainAppHeader.header-compact:hover #headerNavTabs {
+            border-top-color: rgba(51, 65, 85, 0.8) !important;
+        }
+        #mainAppHeader.header-compact:hover #headerNavTabs .tab-btn {
+            padding-top: 0.75rem !important;
+            padding-bottom: 0.75rem !important;
+        }
+        #mainAppHeader.header-compact:hover #headerCompactHint {
+            display: none;
+        }
+</style>
     <script>
         // Dynamic bundle loader: Tự động gắn timestamp Date.now() để luôn nạp bản mới nhất từ server, triệt tiêu 100% rủi ro cache trình duyệt
         document.write('<script src="olap_data_bundle.js?t=' + Date.now() + '"><\/script>');
@@ -122,9 +195,9 @@
     </div>
 
     <div id="dashboardAppWrapper" style="display: none;">
-<header class="sticky top-0 z-50 bg-slate-900/95 backdrop-blur border-b border-slate-800 shadow-md">
+<header id="mainAppHeader" class="sticky top-0 z-50 bg-slate-900/95 backdrop-blur border-b border-slate-800 shadow-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between py-3 gap-3">
+            <div id="headerTopRow" class="flex flex-col md:flex-row md:items-center md:justify-between py-3 gap-3">
                 <div class="flex items-center gap-3">
                     <div class="p-2 bg-sky-500/10 rounded-lg border border-sky-500/20 text-sky-400">
                         <i data-lucide="layout-dashboard" class="w-6 h-6"></i>
@@ -194,7 +267,7 @@
                     <!-- Build Version Badge -->
                     <span id="dashboardBuildBadge" class="hidden lg:inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-900 border border-slate-800 text-[10px] text-slate-400 font-mono" title="Phiên bản Dashboard hiện tại">
                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                        <span id="buildVersionText">v2026.10.20.v9.0</span>
+                        <span id="buildVersionText">v2026.10.20.v9.1</span>
                     </span>
 
                     <!-- User Profile & Logout Badge -->
@@ -212,7 +285,7 @@
             </div>
 
             <!-- Top Navigation 6 Menus -->
-            <nav class="flex space-x-1 sm:space-x-3 border-t border-slate-800/80 overflow-x-auto custom-scrollbar">
+            <nav id="headerNavTabs" class="flex items-center space-x-1 sm:space-x-3 border-t border-slate-800/80 overflow-x-auto custom-scrollbar">
                 <button onclick="switchTab('tab-revenue')" id="btn-tab-revenue" class="tab-btn active flex items-center gap-1.5 py-3 px-3 text-xs sm:text-sm font-semibold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition-all whitespace-nowrap">
                     <i data-lucide="network" class="w-4 h-4 text-cyan-400"></i>
                     <span class="font-bold text-cyan-300">1. Phân Tích Đa Chiều (OLAP)</span>
@@ -241,6 +314,10 @@
                     <i data-lucide="target" class="w-4 h-4 text-emerald-400"></i>
                     <span class="text-emerald-300 font-bold">7. Báo cáo P1-SE</span>
                 </button>
+                <div id="headerCompactHint" class="hidden items-center gap-1.5 px-2.5 py-1 text-[11px] text-sky-400 bg-sky-500/10 rounded-full border border-sky-500/20 whitespace-nowrap ml-auto cursor-pointer transition-all hover:bg-sky-500/20 shadow-sm" title="Rê chuột vào đây để mở rộng toàn bộ thanh Header & Bộ lọc">
+                    <i data-lucide="chevrons-down" class="w-3.5 h-3.5 animate-bounce"></i>
+                    <span class="font-medium hidden sm:inline">Mở rộng Header</span>
+                </div>
             </nav>
         </div>
     </header>
@@ -7324,7 +7401,7 @@
             if (window.lucide) lucide.createIcons();
         }
 
-        const CURRENT_APP_BUILD = "v2026.10.20.v9.0";
+        const CURRENT_APP_BUILD = "v2026.10.20.v9.1";
 
         function forceClearCacheAndReload() {
             try {
@@ -7422,7 +7499,41 @@
         // ==========================================
         document.addEventListener('DOMContentLoaded', () => {
             checkAuthSession();
+            initCompactStickyHeader();
         });
+        // ==========================================
+        // COMPACT STICKY HEADER SCROLL LOGIC
+        // ==========================================
+        function initCompactStickyHeader() {
+            const headerEl = document.getElementById('mainAppHeader');
+            if (!headerEl) return;
+
+            let isTicking = false;
+            function handleScroll() {
+                if (!isTicking) {
+                    window.requestAnimationFrame(() => {
+                        // Kéo xuống khoảng 1 màn hình (threshold = min 250px hoặc 65% chiều cao viewport)
+                        const threshold = Math.max(250, (window.innerHeight || 800) * 0.65);
+                        const scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+                        if (scrollY > threshold) {
+                            if (!headerEl.classList.contains('header-compact')) {
+                                headerEl.classList.add('header-compact');
+                            }
+                        } else if (scrollY < threshold - 80) {
+                            if (headerEl.classList.contains('header-compact')) {
+                                headerEl.classList.remove('header-compact');
+                            }
+                        }
+                        isTicking = false;
+                    });
+                    isTicking = true;
+                }
+            }
+
+            window.addEventListener('scroll', handleScroll, { passive: true });
+            handleScroll();
+        }
+
     
 
         // ==========================================
