@@ -58,22 +58,19 @@
             border-color: #38bdf8;
         }
             /* =========================================================================
-           COMPACT STICKY HEADER ON SCROLL WITH HOVER DROP-DOWN
+           COMPACT STICKY HEADER ON SCROLL (STABLE & NO FLICKER)
            ========================================================================= */
         #mainAppHeader {
-            transition: background-color 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+            transition: background-color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
         }
         #headerTopRow {
-            transition: max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1), 
-                        opacity 0.25s ease, 
-                        padding 0.3s ease, 
-                        margin 0.3s ease;
+            transition: max-height 0.25s ease-out, opacity 0.2s ease, padding 0.2s ease, margin 0.2s ease;
             max-height: 250px;
             opacity: 1;
             overflow: hidden;
         }
         #headerNavTabs {
-            transition: padding 0.25s ease, border-color 0.25s ease;
+            transition: padding 0.2s ease, border-color 0.2s ease;
         }
         #headerNavTabs .tab-btn {
             transition: padding 0.2s ease, font-size 0.2s ease, color 0.2s ease, background-color 0.2s ease;
@@ -82,13 +79,13 @@
             display: none;
         }
 
-        /* Compact sticky state when scrolled past 1 screen */
-        #mainAppHeader.header-compact:not(:hover) {
-            background-color: rgba(15, 23, 42, 0.94);
+        /* Compact state when scrolled down: co dinh em ai, KHONG tu y bung khi hover de tranh nhay giat */
+        #mainAppHeader.header-compact {
+            background-color: rgba(15, 23, 42, 0.96);
             box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.6);
             border-bottom-color: rgba(51, 65, 85, 0.8);
         }
-        #mainAppHeader.header-compact:not(:hover) #headerTopRow {
+        #mainAppHeader.header-compact #headerTopRow {
             max-height: 0 !important;
             opacity: 0 !important;
             padding-top: 0 !important;
@@ -97,38 +94,37 @@
             margin-bottom: 0 !important;
             pointer-events: none;
         }
-        #mainAppHeader.header-compact:not(:hover) #headerNavTabs {
+        #mainAppHeader.header-compact #headerNavTabs {
             border-top-color: transparent !important;
         }
-        #mainAppHeader.header-compact:not(:hover) #headerNavTabs .tab-btn {
+        #mainAppHeader.header-compact #headerNavTabs .tab-btn {
             padding-top: 0.45rem !important;
             padding-bottom: 0.45rem !important;
             font-size: 0.8125rem !important;
         }
-        #mainAppHeader.header-compact:not(:hover) #headerCompactHint {
+        #mainAppHeader.header-compact #headerCompactHint {
             display: inline-flex;
         }
 
-        /* Expanded state on hover when in compact mode */
-        #mainAppHeader.header-compact:hover {
+        /* Expanded state manually triggered by button click */
+        #mainAppHeader.header-compact.header-expanded {
             background-color: rgba(15, 23, 42, 0.98);
             box-shadow: 0 20px 40px -4px rgba(0, 0, 0, 0.9);
             border-bottom-color: rgba(56, 189, 248, 0.35);
         }
-        #mainAppHeader.header-compact:hover #headerTopRow {
-            max-height: 250px;
-            opacity: 1;
-            pointer-events: auto;
-        }
-        #mainAppHeader.header-compact:hover #headerNavTabs {
-            border-top-color: rgba(51, 65, 85, 0.8) !important;
-        }
-        #mainAppHeader.header-compact:hover #headerNavTabs .tab-btn {
+        #mainAppHeader.header-compact.header-expanded #headerTopRow {
+            max-height: 250px !important;
+            opacity: 1 !important;
             padding-top: 0.75rem !important;
             padding-bottom: 0.75rem !important;
+            pointer-events: auto !important;
         }
-        #mainAppHeader.header-compact:hover #headerCompactHint {
-            display: none;
+        #mainAppHeader.header-compact.header-expanded #headerNavTabs {
+            border-top-color: rgba(51, 65, 85, 0.8) !important;
+        }
+        #mainAppHeader.header-compact.header-expanded #headerNavTabs .tab-btn {
+            padding-top: 0.75rem !important;
+            padding-bottom: 0.75rem !important;
         }
 </style>
     <script>
@@ -267,7 +263,7 @@
                     <!-- Build Version Badge -->
                     <span id="dashboardBuildBadge" class="hidden lg:inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-900 border border-slate-800 text-[10px] text-slate-400 font-mono" title="Phiên bản Dashboard hiện tại">
                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                        <span id="buildVersionText">v2026.10.20.v9.1</span>
+                        <span id="buildVersionText">v2026.10.21.v9.2</span>
                     </span>
 
                     <!-- User Profile & Logout Badge -->
@@ -314,10 +310,10 @@
                     <i data-lucide="target" class="w-4 h-4 text-emerald-400"></i>
                     <span class="text-emerald-300 font-bold">7. Báo cáo P1-SE</span>
                 </button>
-                <div id="headerCompactHint" class="hidden items-center gap-1.5 px-2.5 py-1 text-[11px] text-sky-400 bg-sky-500/10 rounded-full border border-sky-500/20 whitespace-nowrap ml-auto cursor-pointer transition-all hover:bg-sky-500/20 shadow-sm" title="Rê chuột vào đây để mở rộng toàn bộ thanh Header & Bộ lọc">
-                    <i data-lucide="chevrons-down" class="w-3.5 h-3.5 animate-bounce"></i>
-                    <span class="font-medium hidden sm:inline">Mở rộng Header</span>
-                </div>
+                <button type="button" id="headerCompactHint" onclick="toggleHeaderCompactManual()" class="hidden items-center gap-1.5 px-2.5 py-1 text-[11px] text-sky-400 bg-sky-500/10 hover:bg-sky-500/25 active:scale-95 rounded-full border border-sky-500/30 whitespace-nowrap ml-auto cursor-pointer transition-all shadow-sm" title="Bấm để mở rộng hoặc thu gọn thanh tiêu đề & bộ lọc">
+                    <i id="headerCompactIcon" data-lucide="chevrons-down" class="w-3.5 h-3.5"></i>
+                    <span id="headerCompactText" class="font-medium hidden sm:inline">Mở rộng Header</span>
+                </button>
             </nav>
         </div>
     </header>
@@ -7401,7 +7397,7 @@
             if (window.lucide) lucide.createIcons();
         }
 
-        const CURRENT_APP_BUILD = "v2026.10.20.v9.1";
+        const CURRENT_APP_BUILD = "v2026.10.21.v9.2";
 
         function forceClearCacheAndReload() {
             try {
@@ -7502,26 +7498,53 @@
             initCompactStickyHeader();
         });
         // ==========================================
-        // COMPACT STICKY HEADER SCROLL LOGIC
+        // COMPACT STICKY HEADER SCROLL & TOGGLE LOGIC (FIX FLICKER)
         // ==========================================
+        function toggleHeaderCompactManual() {
+            const headerEl = document.getElementById('mainAppHeader');
+            if (!headerEl) return;
+            const isExpanded = headerEl.classList.toggle('header-expanded');
+            const iconEl = document.getElementById('headerCompactIcon');
+            const textEl = document.getElementById('headerCompactText');
+            if (iconEl && textEl) {
+                if (isExpanded) {
+                    iconEl.setAttribute('data-lucide', 'chevrons-up');
+                    textEl.textContent = 'Thu gọn';
+                } else {
+                    iconEl.setAttribute('data-lucide', 'chevrons-down');
+                    textEl.textContent = 'Mở rộng Header';
+                }
+                if (window.lucide) lucide.createIcons();
+            }
+        }
+
         function initCompactStickyHeader() {
             const headerEl = document.getElementById('mainAppHeader');
             if (!headerEl) return;
 
+            const compactThreshold = 260;
+            const expandThreshold = 100;
             let isTicking = false;
+
             function handleScroll() {
                 if (!isTicking) {
                     window.requestAnimationFrame(() => {
-                        // Kéo xuống khoảng 1 màn hình (threshold = min 250px hoặc 65% chiều cao viewport)
-                        const threshold = Math.max(250, (window.innerHeight || 800) * 0.65);
                         const scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
-                        if (scrollY > threshold) {
+                        if (scrollY > compactThreshold) {
                             if (!headerEl.classList.contains('header-compact')) {
                                 headerEl.classList.add('header-compact');
                             }
-                        } else if (scrollY < threshold - 80) {
+                        } else if (scrollY < expandThreshold) {
                             if (headerEl.classList.contains('header-compact')) {
                                 headerEl.classList.remove('header-compact');
+                                headerEl.classList.remove('header-expanded');
+                                const iconEl = document.getElementById('headerCompactIcon');
+                                const textEl = document.getElementById('headerCompactText');
+                                if (iconEl && textEl) {
+                                    iconEl.setAttribute('data-lucide', 'chevrons-down');
+                                    textEl.textContent = 'Mở rộng Header';
+                                    if (window.lucide) lucide.createIcons();
+                                }
                             }
                         }
                         isTicking = false;
