@@ -304,9 +304,15 @@ def main():
         target[name]["leadMKT"] += parse_num(r[8] if len(r) > 8 else 0)
         target[name]["leadSeeding"] += parse_num(r[9] if len(r) > 9 else 0)
         target[name]["leadKhac"] += parse_num(r[10] if len(r) > 10 else 0)
-        target[name]["dtTong"] += parse_num(dt_tong_str)
-        target[name]["dtFW"] += parse_num(dt_fw_str)
-        target[name]["dtCross"] += parse_num(dt_cross_str)
+        dt_tong_val = parse_num(dt_tong_str)
+        dt_fw_val = parse_num(dt_fw_str)
+        dt_cross_val = parse_num(dt_cross_str)
+        if dt_tong_val < (dt_fw_val + dt_cross_val):
+            dt_tong_val = dt_fw_val + dt_cross_val
+
+        target[name]["dtTong"] += dt_tong_val
+        target[name]["dtFW"] += dt_fw_val
+        target[name]["dtCross"] += dt_cross_val
         target[name]["teTotal"] += parse_num(r[20] if len(r) > 20 else 0)
         target[name]["teFW"] += parse_num(r[21] if len(r) > 21 else 0)
         target[name]["teMKT"] += parse_num(r[22] if len(r) > 22 else 0)
