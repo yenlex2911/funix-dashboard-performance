@@ -1,0 +1,49 @@
+name: Auto Sync Data from Google Sheets
+
+    on:
+      schedule:
+        # Chạy tự động mỗi tiếng 1 lần từ 6:00 sáng đến 23:00 đêm giờ Việt Nam (UTC+7)
+        # Tương ứng từ 23:00 UTC (hôm trước) và 00:00 đến 16:00 UTC mỗi ngày
+        - cron: '0 23,0-16 * * *'
+      workflow_dispatch: # Cho phép bấm nút "Run workflow" thủ công trên giao diện GitHub hoặc kích hoạt qua API
+      repository_dispatch: # Cho phép kích hoạt qua webhook
+        types: [manual_sync]
+
+    permissions:
+      contents: write
+
+    jobs:
+      sync:
+        runs-on: ubuntu-latest
+
+        steps:
+          - name: Checkout repository
+            uses: actions/checkout@v4
+
+          - name: Set up Python
+            uses: actions/setup-python@v5
+            with:
+              python-version: '3.11'
+              cache: 'pip'
+
+          - name: Install dependencies
+            run: |
+              pip install -r requirements.txt
+
+          - name: Run sync_data.py
+            env:
+              GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+            run: |
+              python sync_data.py
+
+          - name: Commit and push changes
+            run: |
+              git config --local user.email "github-actions[bot]@users.noreply.github.com"
+              git config --local user.name "github-actions[bot]"
+              git add index.html olap_data_bundle.js olap_data_bundle.json
+              if git diff --staged --quiet; then
+                echo "Dữ liệu không có thay đổi mới."
+              else
+                git commit -m "auto: Sync latest data from Google Sheets [skip ci]"
+                git push
+              fi
