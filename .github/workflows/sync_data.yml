@@ -1,18 +1,14 @@
 name: Auto Sync Data from Google Sheets
-
-    on:
+on:
       schedule:
         # Chạy tự động mỗi tiếng 1 lần từ 6:00 sáng đến 23:00 đêm giờ Việt Nam (UTC+7)
-        # Tương ứng từ 23:00 UTC (hôm trước) và 00:00 đến 16:00 UTC mỗi ngày
         - cron: '0 23,0-16 * * *'
-      workflow_dispatch: # Cho phép bấm nút "Run workflow" thủ công trên giao diện GitHub hoặc kích hoạt qua API
-      repository_dispatch: # Cho phép kích hoạt qua webhook
+      workflow_dispatch:
+      repository_dispatch:
         types: [manual_sync]
-
-    permissions:
+permissions:
       contents: write
-
-    jobs:
+jobs:
       sync:
         runs-on: ubuntu-latest
 
