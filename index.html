@@ -214,7 +214,8 @@
                 <div class="flex items-center gap-3 self-end md:self-center">
                     <div class="flex items-center bg-slate-950 border border-slate-700/80 rounded-lg px-3 py-1.5 shadow-inner">
                         <i data-lucide="calendar" class="w-4 h-4 text-sky-400 mr-2"></i>
-                        <label for="globalMonthSelect" class="text-xs text-slate-400 mr-2 font-medium">Kỳ Báo Cáo:</label>
+                        <label for="globalMonthSelect" class="text-xs text-slate-400 mr-1.5 font-medium whitespace-nowrap">Kỳ Báo Cáo:</label>
+                        <span id="reportPeriodLatestSyncDate" class="mr-2 px-2 py-0.5 text-[11px] font-bold font-mono text-emerald-400 bg-emerald-500/10 rounded-md border border-emerald-500/30 whitespace-nowrap shadow-sm" title="Dữ liệu đồng bộ lũy kế đến ngày này">đến 20/10</span>
                         <select id="globalMonthSelect" onchange="onGlobalMonthChange()" class="bg-transparent text-xs text-slate-100 font-semibold focus:outline-none cursor-pointer">
                             <optgroup label="--- XEM THEO NĂM ---" class="bg-slate-900 font-bold text-amber-400">
                                 <option value="YEAR_2026" class="bg-slate-900 font-bold text-amber-300">Cả Năm 2026 (Từ T1 - T10/2026)</option>
@@ -7023,7 +7024,45 @@
                 refreshCurrentTab();
             }, 8000);
         }
-        window.fetchLiveGoogleSheetData = triggerJsonpSync;
+        async function triggerFullCloudAndLiveSync() {
+            triggerJsonpSync();
+            const patToken = localStorage.getItem('FUNIX_GITHUB_ACTIONS_PAT');
+            if (patToken) {
+                try {
+                    const syncBadge = document.getElementById('liveSyncBadge');
+                    if (syncBadge) {
+                        syncBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping"></span> Kích hoạt đám mây...';
+                    }
+                    const res = await fetch('https://api.github.com/repos/yenlex2911/funix-dashboard-performance/actions/workflows/sync_data.yml/dispatches', {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/vnd.github+json',
+                            'Authorization': 'Bearer ' + patToken
+                        },
+                        body: JSON.stringify({ ref: 'main' })
+                    });
+                    if (res.ok || res.status === 204) {
+                        alert("Đã gửi lệnh kích hoạt GitHub Actions chạy ngầm thành công!\nMáy chủ GitHub đang kéo số liệu Google Sheet mới nhất và sẽ tự động cập nhật Dashboard sau khoảng 1-2 phút.");
+                    } else if (res.status === 401 || res.status === 403) {
+                        localStorage.removeItem('FUNIX_GITHUB_ACTIONS_PAT');
+                        showCloudSyncHelpModal();
+                    }
+                } catch(e) {
+                    console.warn("Lỗi gửi dispatch GitHub Actions:", e);
+                }
+            } else {
+                showCloudSyncHelpModal();
+            }
+        }
+
+        function showCloudSyncHelpModal() {
+            const openDirect = confirm("Hệ thống đã chạy đồng bộ nhanh trên trình duyệt!\n\nBạn có muốn mở trang GitHub Actions để bấm 'Run workflow' kích hoạt máy chủ cập nhật toàn bộ cơ sở dữ liệu không?\n\n- Bấm OK để mở trang GitHub Actions.\n- Bấm Cancel nếu chỉ muốn đồng bộ nhanh trên trình duyệt.");
+            if (openDirect) {
+                window.open('https://github.com/yenlex2911/funix-dashboard-performance/actions/workflows/sync_data.yml', '_blank');
+            }
+        }
+
+        window.fetchLiveGoogleSheetData = triggerFullCloudAndLiveSync;
 
         // 2. Callback Doanh Thu (Menu 4)
         window.handleLiveGvizDoanhThu = function(data) {
@@ -7424,6 +7463,8 @@
                 const latestDate = activeOctDays.length > 0 ? (activeOctDays[activeOctDays.length - 1].slice(8, 10) + '/10') : '19/10';
                 const optOct = document.querySelector('#globalMonthSelect option[value="2026-10"]');
                 if (optOct) optOct.textContent = `Tháng 10/2026 (Lũy kế đến ${latestDate} - Hiện tại)`;
+                const badgeSync = document.getElementById('reportPeriodLatestSyncDate');
+                if (badgeSync) badgeSync.textContent = `đến ${latestDate}`;
             } catch(e) {}
             } catch(e) {}
 

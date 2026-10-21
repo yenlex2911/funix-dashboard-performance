@@ -587,13 +587,18 @@ def main():
             new_json_str = json.dumps(app_data_obj, ensure_ascii=False)
             content = content[:app_data_start + len('const APP_DATA = ')] + new_json_str + content[app_data_end:]
 
-        # Auto-update month dropdown text to latest active October day
+        # Auto-update month dropdown text & report period sync badge to latest active October day
         active_days = sorted([d for d, v in mkt_data_by_day.items() if d.startswith('2026-10') and ((v.get('totalLead') or 0) > 0 or (v.get('cost') or 0) > 0)])
         if active_days:
             latest_day_str = active_days[-1][8:10] + "/10"
             content = re.sub(
                 r'Tháng 10/2026 \(Lũy kế đến \d{2}/\d{2} - Hiện tại\)',
                 f'Tháng 10/2026 (Lũy kế đến {latest_day_str} - Hiện tại)',
+                content
+            )
+            content = re.sub(
+                r'<span id="reportPeriodLatestSyncDate"[^>]*>.*?</span>',
+                f'<span id="reportPeriodLatestSyncDate" class="mr-2 px-2 py-0.5 text-[11px] font-bold font-mono text-emerald-400 bg-emerald-500/10 rounded-md border border-emerald-500/30 whitespace-nowrap shadow-sm" title="Dữ liệu đồng bộ lũy kế đến ngày này">đến {latest_day_str}</span>',
                 content
             )
 
