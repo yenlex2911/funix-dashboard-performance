@@ -446,24 +446,24 @@ def main():
     print(f"      -> Tổng hợp cơ cấu Loại Lead: {len(mkt_lead_types_by_month)} tháng và {len(mkt_lead_types_by_day)} ngày.")
 
     new_dt_records = []
-    for idx_dt, r in enumerate(old_bundle['dt']):
-        r_copy = list(r)
+    # Build complete dt records covering all rows of sheet Doanh thu (including 2024 and beyond)
+    total_dt_data_rows = len(dt_rows) - 1
+    for idx_dt in range(total_dt_data_rows):
         sheet_row_idx = idx_dt + 1
-        if sheet_row_idx < len(dt_rows):
-            dt_r = dt_rows[sheet_row_idx]
-            # Cột H sheet Doanh thu: Hannix thực hiện
+        dt_r = dt_rows[sheet_row_idx]
+
+        if idx_dt < len(old_bundle.get('dt', [])):
+            r_copy = list(old_bundle['dt'][idx_dt])
             if len(dt_r) > 7:
                 norm_h = norm_sale(dt_r[7])
                 if norm_h in lookups['h']:
                     r_copy[6] = lookups['h'].index(norm_h)
                 else:
                     r_copy[6] = lookups['h'].index('Khác')
-            # Cột AC sheet Doanh thu: Chu kỳ bán hàng
             if len(dt_r) > 28:
                 try:
                     cycle_val = int(str(dt_r[28]).strip())
                     r_copy[10] = cycle_val
-                    # Bỏ qua Loại KHTS là Branding-IT... và Loại nhập học chứa Refund
                     loai_nh = (dt_r[6] if len(dt_r) > 6 else '').strip().lower()
                     loai_khts = (dt_r[15] if len(dt_r) > 15 else '').strip().lower()
                     course_name = (dt_r[2] if len(dt_r) > 2 else '').strip().lower()
@@ -475,7 +475,6 @@ def main():
                         r_copy.append(is_eligible)
                 except (ValueError, TypeError):
                     pass
-            # Cột Z sheet Doanh thu (index 25): ngày tạo lead -> Tháng tạo lead
             lead_m = None
             if len(dt_r) > 25 and dt_r[25].strip():
                 p = dt_r[25].strip().split(' ')[0].split('/')
@@ -499,7 +498,6 @@ def main():
                 r_copy[14] = lm_idx
             else:
                 r_copy.append(lm_idx)
-            # Cột O sheet Doanh thu (index 14): Loại KHTS Lead & Dòng SP Lead
             lead_khts = (dt_r[14] if len(dt_r) > 14 else '').strip()
             dsp_lead = get_dong_sp('', lead_khts)
             khts_lead_idx = get_idx(lookups['c'], lead_khts)
@@ -512,7 +510,94 @@ def main():
                 r_copy[16] = dsp_lead_idx
             else:
                 r_copy.append(dsp_lead_idx)
+        else:
+            # Construct new record for row >= len(old_bundle['dt']) (e.g. 2024 data)
+            id_str = (dt_r[0] if len(dt_r) > 0 else '').strip()
+            id_idx = get_idx(lookups.setdefault('id', []), id_str)
+
+            ngay_khop = (dt_r[5] if len(dt_r) > 5 else '').strip()
+            pts = ngay_khop.split('/')
+            if len(pts) == 3:
+                m_key = f"{pts[2]}-{pts[1].zfill(2)}"
+                d_key = f"{pts[2]}-{pts[1].zfill(2)}-{pts[0].zfill(2)}"
+            else:
+                m_key = '2024-01'
+                d_key = '2024-01-01'
+            m_idx = get_idx(lookups['m'], m_key)
+            date_idx = get_idx(lookups.setdefault('date', []), d_key)
+
+            ch = (dt_r[11] if len(dt_r) > 11 else '').strip() or 'Other'
+            ch_idx = get_idx(lookups['ch'], ch)
+
+            ls = (dt_r[12] if len(dt_r) > 12 else '').strip() or 'Other'
+            ls_idx = get_idx(lookups['ls'], ls)
+
+            course = (dt_r[2] if len(dt_r) > 2 else '').strip()
+            khts_ne = (dt_r[15] if len(dt_r) > 15 else '').strip() or course
+            dsp = get_dong_sp(course, khts_ne)
+            dsp_idx = get_idx(lookups['dsp'], dsp)
+            c_idx = get_idx(lookups['c'], khts_ne)
+
+            mid = (dt_r[17] if len(dt_r) > 17 else (dt_r[13] if len(dt_r) > 13 else '')).strip() or 'Khác'
+            mid_idx = get_idx(lookups['mid'], mid)
+
+            h = norm_sale(dt_r[7] if len(dt_r) > 7 else '')
+            h_idx = lookups['h'].index(h)
+
+            tg = (dt_r[19] if len(dt_r) > 19 else '').strip() or 'Người đi làm'
+            tg_idx = get_idx(lookups['tg'], tg)
+
+            rv = (dt_r[6] if len(dt_r) > 6 else '').strip() or 'New'
+            rv_idx = get_idx(lookups['rv'], rv)
+
+            rev = parse_num(dt_r[4] if len(dt_r) > 4 else 0)
+
+            raw_cycle = (dt_r[26] if len(dt_r) > 26 and dt_r[26] else (dt_r[28] if len(dt_r) > 28 else '0')).strip()
+            try: cycle_val = int(raw_cycle)
+            except Exception: cycle_val = 0
+
+            loai_nh = rv.lower()
+            loai_khts = khts_ne.lower()
+            course_name = course.lower()
+            is_excluded = ('refund' in loai_nh) or ('branding' in loai_khts) or ('branding' in course_name)
+            is_eligible = 1 if (cycle_val > 0 and not is_excluded) else 0
+
+            lead_m = None
+            if len(dt_r) > 27 and dt_r[27].strip():
+                p = dt_r[27].strip().split(' ')[0].split('/')
+                if len(p) == 3:
+                    lead_m = f"{p[2]}-{p[1].zfill(2)}"
+            if not lead_m:
+                try:
+                    dt_d = datetime.date.fromisoformat(d_key)
+                    lead_d = dt_d - datetime.timedelta(days=cycle_val)
+                    lead_m = lead_d.strftime('%Y-%m')
+                except Exception:
+                    lead_m = m_key
+            if 'lm' not in lookups: lookups['lm'] = list(lookups['m'])
+            if lead_m not in lookups['lm']: lookups['lm'].append(lead_m)
+            lm_idx = lookups['lm'].index(lead_m)
+
+            lead_khts = (dt_r[14] if len(dt_r) > 14 else '').strip()
+            dsp_lead = get_dong_sp('', lead_khts)
+            khts_lead_idx = get_idx(lookups['c'], lead_khts)
+            dsp_lead_idx = get_idx(lookups['dsp'], dsp_lead)
+
+            r_copy = [
+                m_idx, ch_idx, ls_idx, dsp_idx, c_idx, mid_idx, h_idx, tg_idx,
+                rv_idx, rev, cycle_val, id_idx, date_idx, is_eligible, lm_idx,
+                khts_lead_idx, dsp_lead_idx
+            ]
         new_dt_records.append(r_copy)
+
+    # Sort lookups['m'] chronologically and re-index r[0] for lead & dt records
+    sorted_m = sorted(list(set(lookups['m'])))
+    old_to_new_m = {old_idx: sorted_m.index(m_val) for old_idx, m_val in enumerate(lookups['m'])}
+    for r in new_lead_records:
+        r[0] = old_to_new_m.get(r[0], r[0])
+    for r in new_dt_records:
+        r[0] = old_to_new_m.get(r[0], r[0])
+    lookups['m'] = sorted_m
 
     olap_bundle_obj = {
         "lookups": lookups,

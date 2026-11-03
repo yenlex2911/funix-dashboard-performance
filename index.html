@@ -220,7 +220,8 @@
                             <optgroup label="--- XEM THEO NĂM ---" class="bg-slate-900 font-bold text-amber-400">
                                 <option value="YEAR_2026" class="bg-slate-900 font-bold text-amber-300">Cả Năm 2026 (Từ T1 - T11/2026)</option>
                                 <option value="YEAR_2025" class="bg-slate-900 font-bold text-amber-300">Cả Năm 2025 (Từ T1 - T12/2025)</option>
-                                <option value="ALL" class="bg-slate-900 font-bold text-sky-400">Toàn Bộ Các Năm (2025 - 2026)</option>
+                                <option value="YEAR_2024" class="bg-slate-900 font-bold text-amber-300">Cả Năm 2024 (Từ T1 - T12/2024)</option>
+                                <option value="ALL" class="bg-slate-900 font-bold text-sky-400">Toàn Bộ Các Năm (2024 - 2026)</option>
                             </optgroup>
                             <optgroup label="--- THÁNG NĂM 2026 ---" class="bg-slate-900 font-semibold text-slate-200">
                                 <option value="2026-11" selected class="bg-slate-900 font-bold text-sky-400">Tháng 11/2026 (Lũy kế đến 02/11 - Hiện tại)</option>
@@ -248,6 +249,20 @@
                                 <option value="2025-03" class="bg-slate-900">Tháng 03/2025</option>
                                 <option value="2025-02" class="bg-slate-900">Tháng 02/2025</option>
                                 <option value="2025-01" class="bg-slate-900">Tháng 01/2025</option>
+                            </optgroup>
+                            <optgroup label="--- THÁNG NĂM 2024 ---" class="bg-slate-900 font-semibold text-slate-400">
+                                <option value="2024-12" class="bg-slate-900">Tháng 12/2024</option>
+                                <option value="2024-11" class="bg-slate-900">Tháng 11/2024</option>
+                                <option value="2024-10" class="bg-slate-900">Tháng 10/2024</option>
+                                <option value="2024-09" class="bg-slate-900">Tháng 09/2024</option>
+                                <option value="2024-08" class="bg-slate-900">Tháng 08/2024</option>
+                                <option value="2024-07" class="bg-slate-900">Tháng 07/2024</option>
+                                <option value="2024-06" class="bg-slate-900">Tháng 06/2024</option>
+                                <option value="2024-05" class="bg-slate-900">Tháng 05/2024</option>
+                                <option value="2024-04" class="bg-slate-900">Tháng 04/2024</option>
+                                <option value="2024-03" class="bg-slate-900">Tháng 03/2024</option>
+                                <option value="2024-02" class="bg-slate-900">Tháng 02/2024</option>
+                                <option value="2024-01" class="bg-slate-900">Tháng 01/2024</option>
                             </optgroup>
                         </select>
                     </div>
@@ -488,7 +503,8 @@
                 <button type="button" onclick="setOlapTimePreset('Q3_2026')" id="btn-olap-q3-2026" class="px-2.5 py-1 text-xs rounded-lg font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">Quý 3/2026</button>
                 <button type="button" onclick="setOlapTimePreset('YEAR_2026')" id="btn-olap-year-2026" class="px-2.5 py-1 text-xs rounded-lg font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">Năm 2026</button>
                 <button type="button" onclick="setOlapTimePreset('YEAR_2025')" id="btn-olap-year-2025" class="px-2.5 py-1 text-xs rounded-lg font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">Năm 2025</button>
-                <button type="button" onclick="setOlapTimePreset('ALL')" id="btn-olap-all" class="px-2.5 py-1 text-xs rounded-lg font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">Tất Cả (2025 - 2026)</button>
+                <button type="button" onclick="setOlapTimePreset('YEAR_2024')" id="btn-olap-year-2024" class="px-2.5 py-1 text-xs rounded-lg font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">Năm 2024</button>
+                <button type="button" onclick="setOlapTimePreset('ALL')" id="btn-olap-all" class="px-2.5 py-1 text-xs rounded-lg font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">Tất Cả (2024 - 2026)</button>
             </div>
 
             <!-- Khoảng thời gian: Từ tháng -> Đến tháng -->
@@ -3566,7 +3582,7 @@
             const months = bundle.lookups.m || [];
             if (!months.length) return;
 
-            ['CURR_MONTH', 'Q3_2026', 'YEAR_2026', 'YEAR_2025', 'ALL'].forEach(p => {
+            ['CURR_MONTH', 'Q3_2026', 'YEAR_2026', 'YEAR_2025', 'YEAR_2024', 'ALL'].forEach(p => {
                 const btn = document.getElementById('btn-olap-' + p.toLowerCase().replace('_', '-'));
                 if (btn) {
                     if (p === preset) {
@@ -3595,6 +3611,10 @@
                 const m25 = months.filter(m => m.startsWith('2025'));
                 olapMonthFrom = m25[0] || '2025-01';
                 olapMonthTo = m25[m25.length - 1] || '2025-12';
+            } else if (preset === 'YEAR_2024') {
+                const m24 = months.filter(m => m.startsWith('2024'));
+                olapMonthFrom = m24[0] || '2024-01';
+                olapMonthTo = m24[m24.length - 1] || '2024-12';
             } else if (preset === 'ALL') {
                 olapMonthFrom = months[0];
                 olapMonthTo = months[months.length - 1];
@@ -5256,9 +5276,13 @@
         // 3. SALES PERFORMANCE LOGIC
         // ==========================================
         function getMktFilterMonths() {
-            const allMonths = Object.keys((APP_DATA && APP_DATA.mktDataByMonth) || {});
+            const allMonths = Array.from(new Set([
+                ...Object.keys((APP_DATA && APP_DATA.mktDataByMonth) || {}),
+                ...Object.keys((APP_DATA && APP_DATA.dtTransactionsByMonth) || {})
+            ])).sort();
             if (currentMonthFilter === 'YEAR_2026') return allMonths.filter(m => m.startsWith('2026'));
             if (currentMonthFilter === 'YEAR_2025') return allMonths.filter(m => m.startsWith('2025'));
+            if (currentMonthFilter === 'YEAR_2024') return allMonths.filter(m => m.startsWith('2024'));
             if (currentMonthFilter === 'TOTAL_ALL' || currentMonthFilter === 'ALL') return allMonths;
             return [currentMonthFilter || '2026-11'];
         }
@@ -5274,7 +5298,7 @@
         function renderSalesTab() {
             const filterMonths = getMktFilterMonths();
             const periodLabel = currentMonthFilter.startsWith('YEAR_') 
-                ? (currentMonthFilter === 'YEAR_2026' ? 'Cả năm 2026' : 'Cả năm 2025') 
+                ? (currentMonthFilter === 'YEAR_2026' ? 'Cả năm 2026' : (currentMonthFilter === 'YEAR_2025' ? 'Cả năm 2025' : 'Cả năm 2024')) 
                 : (currentMonthFilter === 'ALL' ? 'Toàn bộ các năm' : ('Tháng ' + currentMonthFilter.slice(5) + '/' + currentMonthFilter.slice(0, 4)));
             const pBadge = document.getElementById('salesPeriodBadge');
             if (pBadge) pBadge.textContent = periodLabel;
@@ -5480,7 +5504,7 @@
             const avgTicket = tongTE > 0 ? (totalAmount / tongTE) : 0;
 
             const periodLabel = currentMonthFilter.startsWith('YEAR_') 
-                ? (currentMonthFilter === 'YEAR_2026' ? 'Cả năm 2026' : 'Cả năm 2025') 
+                ? (currentMonthFilter === 'YEAR_2026' ? 'Cả năm 2026' : (currentMonthFilter === 'YEAR_2025' ? 'Cả năm 2025' : 'Cả năm 2024')) 
                 : (currentMonthFilter === 'ALL' ? 'Toàn bộ các năm' : ('Tháng ' + currentMonthFilter.slice(5) + '/' + currentMonthFilter.slice(0, 4)));
 
             // Check if selected period has no transactions in Sheet Doanh thu
@@ -7451,7 +7475,7 @@
             if (window.lucide) lucide.createIcons();
         }
 
-        const CURRENT_APP_BUILD = "v2026.11.03.v10.0";
+        const CURRENT_APP_BUILD = "v2026.11.03.v10.1";
 
         function forceClearCacheAndReload() {
             try {
