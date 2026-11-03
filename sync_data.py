@@ -593,20 +593,39 @@ def main():
             new_json_str = json.dumps(app_data_obj, ensure_ascii=False)
             content = content[:app_data_start + len('const APP_DATA = ')] + new_json_str + content[app_data_end:]
 
-        # Auto-update month dropdown text & report period sync badge to latest active October day
-        active_days = sorted([d for d, v in mkt_data_by_day.items() if d.startswith('2026-10') and ((v.get('totalLead') or 0) > 0 or (v.get('cost') or 0) > 0)])
+        # Auto-update month dropdown text & report period sync badge to latest active day dynamically
+        active_days = sorted([d for d, v in mkt_data_by_day.items() if ((v.get('totalLead') or 0) > 0 or (v.get('cost') or 0) > 0)])
         if active_days:
-            latest_day_str = active_days[-1][8:10] + "/10"
-            content = re.sub(
-                r'Tháng 10/2026 \(Lũy kế đến \d{2}/\d{2} - Hiện tại\)',
-                f'Tháng 10/2026 (Lũy kế đến {latest_day_str} - Hiện tại)',
-                content
-            )
+            latest_day = active_days[-1]
+            pts = latest_day.split('-')
+            latest_day_str = f"{pts[2]}/{pts[1]}"
+            latest_m_key = f"{pts[0]}-{pts[1]}"
+            latest_m_num = int(pts[1])
+            latest_y_num = pts[0]
+
             content = re.sub(
                 r'<span id="reportPeriodLatestSyncDate"[^>]*>.*?</span>',
                 f'<span id="reportPeriodLatestSyncDate" class="mr-2 px-2 py-0.5 text-[11px] font-bold font-mono text-emerald-400 bg-emerald-500/10 rounded-md border border-emerald-500/30 whitespace-nowrap shadow-sm" title="Dữ liệu đồng bộ lũy kế đến ngày này">đến {latest_day_str}</span>',
                 content
             )
+            content = re.sub(
+                rf'Cả Năm {latest_y_num} \(Từ T1 - T\d{{1,2}}/{latest_y_num}\)',
+                f'Cả Năm {latest_y_num} (Từ T1 - T{latest_m_num}/{latest_y_num})',
+                content
+            )
+            if f'value="{latest_m_key}"' not in content:
+                repl_opt = f'\\1\n                                <option value="{latest_m_key}" selected class="bg-slate-900 font-bold text-sky-400">Tháng {latest_m_num:02d}/{latest_y_num} (Lũy kế đến {latest_day_str} - Hiện tại)</option>'
+                content = re.sub(
+                    rf'(<optgroup label="--- THÁNG NĂM {latest_y_num} ---"[^>]*>)',
+                    repl_opt,
+                    content
+                )
+            else:
+                content = re.sub(
+                    rf'<option value="{latest_m_key}"[^>]*>.*?</option>',
+                    f'<option value="{latest_m_key}" selected class="bg-slate-900 font-bold text-sky-400">Tháng {latest_m_num:02d}/{latest_y_num} (Lũy kế đến {latest_day_str} - Hiện tại)</option>',
+                    content
+                )
 
         with open(h_path, 'w', encoding='utf-8') as f:
             f.write(content)

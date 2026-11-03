@@ -215,15 +215,16 @@
                     <div class="flex items-center bg-slate-950 border border-slate-700/80 rounded-lg px-3 py-1.5 shadow-inner">
                         <i data-lucide="calendar" class="w-4 h-4 text-sky-400 mr-2"></i>
                         <label for="globalMonthSelect" class="text-xs text-slate-400 mr-1.5 font-medium whitespace-nowrap">Kỳ Báo Cáo:</label>
-                        <span id="reportPeriodLatestSyncDate" class="mr-2 px-2 py-0.5 text-[11px] font-bold font-mono text-emerald-400 bg-emerald-500/10 rounded-md border border-emerald-500/30 whitespace-nowrap shadow-sm" title="Dữ liệu đồng bộ lũy kế đến ngày này">đến 31/10</span>
+                        <span id="reportPeriodLatestSyncDate" class="mr-2 px-2 py-0.5 text-[11px] font-bold font-mono text-emerald-400 bg-emerald-500/10 rounded-md border border-emerald-500/30 whitespace-nowrap shadow-sm" title="Dữ liệu đồng bộ lũy kế đến ngày này">đến 02/11</span>
                         <select id="globalMonthSelect" onchange="onGlobalMonthChange()" class="bg-transparent text-xs text-slate-100 font-semibold focus:outline-none cursor-pointer">
                             <optgroup label="--- XEM THEO NĂM ---" class="bg-slate-900 font-bold text-amber-400">
-                                <option value="YEAR_2026" class="bg-slate-900 font-bold text-amber-300">Cả Năm 2026 (Từ T1 - T10/2026)</option>
+                                <option value="YEAR_2026" class="bg-slate-900 font-bold text-amber-300">Cả Năm 2026 (Từ T1 - T11/2026)</option>
                                 <option value="YEAR_2025" class="bg-slate-900 font-bold text-amber-300">Cả Năm 2025 (Từ T1 - T12/2025)</option>
                                 <option value="ALL" class="bg-slate-900 font-bold text-sky-400">Toàn Bộ Các Năm (2025 - 2026)</option>
                             </optgroup>
                             <optgroup label="--- THÁNG NĂM 2026 ---" class="bg-slate-900 font-semibold text-slate-200">
-                                <option value="2026-10" selected class="bg-slate-900 font-bold text-sky-400">Tháng 10/2026 (Lũy kế đến 31/10 - Hiện tại)</option>
+                                <option value="2026-11" selected class="bg-slate-900 font-bold text-sky-400">Tháng 11/2026 (Lũy kế đến 02/11 - Hiện tại)</option>
+                                <option value="2026-10" class="bg-slate-900">Tháng 10/2026</option>
                                 <option value="2026-09" class="bg-slate-900">Tháng 09/2026</option>
                                 <option value="2026-08" class="bg-slate-900">Tháng 08/2026</option>
                                 <option value="2026-07" class="bg-slate-900">Tháng 07/2026</option>
@@ -2220,7 +2221,7 @@
         let currentActiveTab = 'tab-revenue';
         let currentRevenueTeam = 'all';
         let currentSalesSort = 'revenue'; // 'revenue' or 'cr'
-        let currentMonthFilter = '2026-10';
+        let currentMonthFilter = '2026-11';
         
         // Multi-select selected products array for Tab 5
         let selectedTyTrongProducts = ['Software Engineering', 'xSeri', 'Fresher', 'xUP'];
@@ -2284,10 +2285,10 @@
 
         // Marketing Tab State Variables
         let mktCycleMode = 'month'; // 'month' | 'year' | 'range'
-        let mktSelectedMonth = '2026-10';
+        let mktSelectedMonth = '2026-11';
         let mktSelectedYear = '2026';
-        let mktDateFrom = '2026-10-01';
-        let mktDateTo = '2026-10-31';
+        let mktDateFrom = '2026-11-01';
+        let mktDateTo = '2026-11-30';
         let mktGranularity = 'day'; // 'day' | 'month'
         let _mktFilterInitialized = false;
 
@@ -4462,7 +4463,8 @@
                 const months = Object.keys(APP_DATA.mktDataByMonth).sort().reverse();
                 selectMonth.innerHTML = months.map(m => {
                     const isSelected = (m === mktSelectedMonth) ? 'selected' : '';
-                    const label = (m === '2026-10') ? 'Tháng 10/2026 (Lũy kế - Hiện tại)' : `Tháng ${m.slice(5)}/${m.slice(0, 4)}`;
+                    const latestKey = months[0];
+                    const label = (m === latestKey) ? `Tháng ${m.slice(5)}/${m.slice(0, 4)} (Lũy kế - Hiện tại)` : `Tháng ${m.slice(5)}/${m.slice(0, 4)}`;
                     return `<option value="${m}" ${isSelected}>${label}</option>`;
                 }).join('');
             }
@@ -4543,12 +4545,12 @@
 
         function onMktFilterChange() {
             if (mktCycleMode === 'month') {
-                mktSelectedMonth = document.getElementById('mktSelectMonth')?.value || '2026-10';
+                mktSelectedMonth = document.getElementById('mktSelectMonth')?.value || '2026-11';
             } else if (mktCycleMode === 'year') {
                 mktSelectedYear = document.getElementById('mktSelectYear')?.value || '2026';
             } else if (mktCycleMode === 'range') {
-                mktDateFrom = document.getElementById('mktDateFrom')?.value || '2026-10-01';
-                mktDateTo = document.getElementById('mktDateTo')?.value || '2026-10-31';
+                mktDateFrom = document.getElementById('mktDateFrom')?.value || '2026-11-01';
+                mktDateTo = document.getElementById('mktDateTo')?.value || '2026-11-30';
             }
             renderMarketingTab();
         }
@@ -4557,9 +4559,12 @@
             initMktFilterControls();
 
             // =========================================================
-            // 1. CỐ ĐỊNH 4 CHỈ SỐ NỔI BẬT THEO THÁNG HIỆN TẠI (THÁNG 10/2026)
+            // 1. CỐ ĐỊNH 4 CHỈ SỐ NỔI BẬT THEO THÁNG HIỆN TẠI (TỰ ĐỘNG THEO DỮ LIỆU MỚI NHẤT)
             // =========================================================
-            const currentMonthKey = '2026-10';
+            const activeDays = Object.keys(APP_DATA.mktDataByDay || {}).filter(d => ((APP_DATA.mktDataByDay[d]?.totalLead || 0) > 0 || (APP_DATA.mktDataByDay[d]?.cost || 0) > 0)).sort();
+            const latestDateStr = activeDays.length > 0 ? activeDays[activeDays.length - 1] : '2026-11-02';
+            const latestPts = latestDateStr.split('-');
+            const currentMonthKey = `${latestPts[0]}-${latestPts[1]}`;
             const curM = (APP_DATA.mktDataByMonth && APP_DATA.mktDataByMonth[currentMonthKey]) || {
                 totalLead: 0, leadCL: 0, cost: 0, revenueAll: 0
             };
@@ -4567,22 +4572,22 @@
             const curAvgCpl = curM.totalLead > 0 ? (curM.cost / curM.totalLead) : 0;
             const curRoas = curM.cost > 0 ? (curM.revenueAll / curM.cost) : 0;
 
-            const activeOctDays = Object.keys(APP_DATA.mktDataByDay || {}).filter(d => d.startsWith('2026-10') && ((APP_DATA.mktDataByDay[d]?.totalLead || 0) > 0 || (APP_DATA.mktDataByDay[d]?.cost || 0) > 0)).sort();
-            const latestOctDateStr = activeOctDays.length > 0 ? (activeOctDays[activeOctDays.length - 1].slice(8, 10) + '/10/2026') : '19/10/2026';
+            const latestFormatted = `${latestPts[2]}/${latestPts[1]}/${latestPts[0]}`;
+            const latestDayMonth = `${latestPts[2]}/${latestPts[1]}`;
             const noticeEl = document.getElementById('mktCurrentMonthNotice');
             if (noticeEl) {
-                noticeEl.textContent = `Cố định dữ liệu Tháng hiện tại (Tháng 10/2026 - Lũy kế đến ${latestOctDateStr})`;
+                noticeEl.textContent = `Cố định dữ liệu Tháng hiện tại (Tháng ${latestPts[1]}/${latestPts[0]} - Lũy kế đến ${latestFormatted})`;
             }
-            const globalOptOct = document.querySelector('#globalMonthSelect option[value="2026-10"]');
-            if (globalOptOct) {
-                globalOptOct.textContent = `Tháng 10/2026 (Lũy kế đến ${latestOctDateStr.slice(0, 5)} - Hiện tại)`;
+            const globalOptCur = document.querySelector(`#globalMonthSelect option[value="${currentMonthKey}"]`);
+            if (globalOptCur) {
+                globalOptCur.textContent = `Tháng ${latestPts[1]}/${latestPts[0]} (Lũy kế đến ${latestDayMonth} - Hiện tại)`;
             }
 
             document.getElementById('mktScorecardsContainer').innerHTML = `
                 <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm relative overflow-hidden">
                     <div class="flex items-center justify-between">
                         <div class="text-xs text-slate-400">Tổng Lead FUNiX Way</div>
-                        <span class="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">Tháng 10/2026</span>
+                        <span class="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">Tháng ${latestPts[1]}/${latestPts[0]}</span>
                     </div>
                     <div class="text-2xl font-black text-sky-400 mt-1">${(curM.totalLead || 0).toLocaleString('vi-VN')} Lead</div>
                     <div class="text-[11px] text-slate-400 mt-1">Lũy kế tháng hiện tại</div>
@@ -4590,7 +4595,7 @@
                 <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm relative overflow-hidden">
                     <div class="flex items-center justify-between">
                         <div class="text-xs text-slate-400">Lead Chất Lượng (CL)</div>
-                        <span class="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">Tháng 10/2026</span>
+                        <span class="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">Tháng ${latestPts[1]}/${latestPts[0]}</span>
                     </div>
                     <div class="text-2xl font-black text-emerald-400 mt-1">${(curM.leadCL || 0).toLocaleString('vi-VN')} Lead</div>
                     <div class="text-[11px] text-emerald-400 mt-1">Tỷ lệ CL: <strong>${curClPct.toFixed(2).replace('.', ',')}%</strong></div>
@@ -4598,7 +4603,7 @@
                 <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm relative overflow-hidden">
                     <div class="flex items-center justify-between">
                         <div class="text-xs text-slate-400">Tổng Chi Phí Marketing</div>
-                        <span class="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">Tháng 10/2026</span>
+                        <span class="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">Tháng ${latestPts[1]}/${latestPts[0]}</span>
                     </div>
                     <div class="text-2xl font-black text-amber-400 mt-1">${formatVnCurrency(curM.cost || 0)}</div>
                     <div class="text-[11px] text-slate-400 mt-1">CPL TB: <strong>${Math.round(curAvgCpl).toLocaleString('vi-VN')} đ/lead</strong></div>
@@ -4606,7 +4611,7 @@
                 <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm relative overflow-hidden">
                     <div class="flex items-center justify-between">
                         <div class="text-xs text-slate-400">Doanh Thu All Nguồn MKT</div>
-                        <span class="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">Tháng 10/2026</span>
+                        <span class="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">Tháng ${latestPts[1]}/${latestPts[0]}</span>
                     </div>
                     <div class="text-2xl font-black text-rose-400 mt-1">${formatVnCurrency(curM.revenueAll || 0)}</div>
                     <div class="text-[11px] text-rose-300 mt-1">ROAS: <strong>${curRoas.toFixed(2)}x</strong></div>
@@ -5255,7 +5260,7 @@
             if (currentMonthFilter === 'YEAR_2026') return allMonths.filter(m => m.startsWith('2026'));
             if (currentMonthFilter === 'YEAR_2025') return allMonths.filter(m => m.startsWith('2025'));
             if (currentMonthFilter === 'TOTAL_ALL' || currentMonthFilter === 'ALL') return allMonths;
-            return [currentMonthFilter || '2026-10'];
+            return [currentMonthFilter || '2026-11'];
         }
 
         function setSalesSort(mode) {
@@ -7446,7 +7451,7 @@
             if (window.lucide) lucide.createIcons();
         }
 
-        const CURRENT_APP_BUILD = "v2026.10.21.v9.4";
+        const CURRENT_APP_BUILD = "v2026.11.03.v10.0";
 
         function forceClearCacheAndReload() {
             try {
@@ -7469,12 +7474,17 @@
                 const badgeEl = document.getElementById('buildVersionText');
                 if (badgeEl) badgeEl.textContent = CURRENT_APP_BUILD;
             try {
-                const activeOctDays = Object.keys(APP_DATA.mktDataByDay || {}).filter(d => d.startsWith('2026-10') && ((APP_DATA.mktDataByDay[d]?.totalLead || 0) > 0 || (APP_DATA.mktDataByDay[d]?.cost || 0) > 0)).sort();
-                const latestDate = activeOctDays.length > 0 ? (activeOctDays[activeOctDays.length - 1].slice(8, 10) + '/10') : '19/10';
-                const optOct = document.querySelector('#globalMonthSelect option[value="2026-10"]');
-                if (optOct) optOct.textContent = `Tháng 10/2026 (Lũy kế đến ${latestDate} - Hiện tại)`;
-                const badgeSync = document.getElementById('reportPeriodLatestSyncDate');
-                if (badgeSync) badgeSync.textContent = `đến ${latestDate}`;
+                const activeDays = Object.keys(APP_DATA.mktDataByDay || {}).filter(d => ((APP_DATA.mktDataByDay[d]?.totalLead || 0) > 0 || (APP_DATA.mktDataByDay[d]?.cost || 0) > 0)).sort();
+                if (activeDays.length > 0) {
+                    const latestDateStr = activeDays[activeDays.length - 1];
+                    const pts = latestDateStr.split('-');
+                    const latestDayMonth = `${pts[2]}/${pts[1]}`;
+                    const curMonthKey = `${pts[0]}-${pts[1]}`;
+                    const optCurrent = document.querySelector(`#globalMonthSelect option[value="${curMonthKey}"]`);
+                    if (optCurrent) optCurrent.textContent = `Tháng ${pts[1]}/${pts[0]} (Lũy kế đến ${latestDayMonth} - Hiện tại)`;
+                    const badgeSync = document.getElementById('reportPeriodLatestSyncDate');
+                    if (badgeSync) badgeSync.textContent = `đến ${latestDayMonth}`;
+                }
             } catch(e) {}
             } catch(e) {}
 
