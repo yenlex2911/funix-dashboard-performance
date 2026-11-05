@@ -509,13 +509,14 @@
 
             <!-- Khoảng thời gian: Từ tháng -> Đến tháng -->
             <div class="flex items-center gap-2">
+                <span id="olapCustomBadge" class="hidden px-2 py-0.5 text-[10px] rounded-full font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">Tùy chỉnh</span>
                 <div class="flex items-center gap-1.5 text-xs">
                     <span class="text-slate-400">Từ tháng:</span>
-                    <select id="olapMonthFrom" onchange="onOlapCustomTimeChange()" class="bg-slate-950 border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1 text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none"></select>
+                    <select id="olapMonthFrom" onchange="onOlapCustomTimeChange('from')" class="bg-slate-950 border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1 text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none"></select>
                 </div>
                 <div class="flex items-center gap-1.5 text-xs">
                     <span class="text-slate-400">Đến tháng:</span>
-                    <select id="olapMonthTo" onchange="onOlapCustomTimeChange()" class="bg-slate-950 border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1 text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none"></select>
+                    <select id="olapMonthTo" onchange="onOlapCustomTimeChange('to')" class="bg-slate-950 border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1 text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none"></select>
                 </div>
             </div>
         </div>
@@ -3541,6 +3542,7 @@
                 olapMonthTo = latestM;
                 selFrom.value = latestM;
                 selTo.value = latestM;
+                updateOlapPresetButtonsState('CURR_MONTH');
             }
 
             const populateSel = (id, list, placeholder) => {
@@ -3576,22 +3578,56 @@
             _olapInitialized = true;
         }
 
-        function setOlapTimePreset(preset) {
-            olapTimePreset = preset;
-            const bundle = getOlapBundle();
-            const months = bundle.lookups.m || [];
-            if (!months.length) return;
-
-            ['CURR_MONTH', 'Q3_2026', 'YEAR_2026', 'YEAR_2025', 'YEAR_2024', 'ALL'].forEach(p => {
+                function updateOlapPresetButtonsState(activePreset) {
+            const presets = ['CURR_MONTH', 'Q3_2026', 'YEAR_2026', 'YEAR_2025', 'YEAR_2024', 'ALL'];
+            presets.forEach(p => {
                 const btn = document.getElementById('btn-olap-' + p.toLowerCase().replace('_', '-'));
                 if (btn) {
-                    if (p === preset) {
+                    if (p === activePreset) {
                         btn.className = 'px-2.5 py-1 text-xs rounded-lg font-semibold bg-cyan-500 text-slate-950 shadow-sm transition-all';
                     } else {
                         btn.className = 'px-2.5 py-1 text-xs rounded-lg font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all';
                     }
                 }
             });
+
+            const customBadge = document.getElementById('olapCustomBadge');
+            const selFrom = document.getElementById('olapMonthFrom');
+            const selTo = document.getElementById('olapMonthTo');
+            if (activePreset === 'CUSTOM') {
+                if (customBadge) customBadge.classList.remove('hidden');
+                if (selFrom) selFrom.className = 'bg-slate-900 border border-cyan-400 text-cyan-300 font-bold rounded-lg px-2.5 py-1 text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none shadow-sm';
+                if (selTo) selTo.className = 'bg-slate-900 border border-cyan-400 text-cyan-300 font-bold rounded-lg px-2.5 py-1 text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none shadow-sm';
+            } else {
+                if (customBadge) customBadge.classList.add('hidden');
+                if (selFrom) selFrom.className = 'bg-slate-950 border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1 text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none';
+                if (selTo) selTo.className = 'bg-slate-950 border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1 text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none';
+            }
+        }
+
+        function detectMatchingOlapPreset(from, to) {
+            const bundle = getOlapBundle();
+            const months = bundle.lookups.m || [];
+            if (!months.length) return 'CUSTOM';
+            const latest = months[months.length - 1];
+            const m26 = months.filter(m => m.startsWith('2026'));
+            const m25 = months.filter(m => m.startsWith('2025'));
+            const m24 = months.filter(m => m.startsWith('2024'));
+
+            if (from === latest && to === latest) return 'CURR_MONTH';
+            if (from === '2026-07' && to === '2026-09') return 'Q3_2026';
+            if (from === (m26[0] || '2026-01') && to === (m26[m26.length - 1] || '2026-09')) return 'YEAR_2026';
+            if (from === (m25[0] || '2025-01') && to === (m25[m25.length - 1] || '2025-12')) return 'YEAR_2025';
+            if (from === (m24[0] || '2024-01') && to === (m24[m24.length - 1] || '2024-12')) return 'YEAR_2024';
+            if (from === months[0] && to === months[months.length - 1]) return 'ALL';
+            return 'CUSTOM';
+        }
+
+        function setOlapTimePreset(preset) {
+            olapTimePreset = preset;
+            const bundle = getOlapBundle();
+            const months = bundle.lookups.m || [];
+            if (!months.length) return;
 
             const selFrom = document.getElementById('olapMonthFrom');
             const selTo = document.getElementById('olapMonthTo');
@@ -3623,19 +3659,37 @@
             if (selFrom) selFrom.value = olapMonthFrom;
             if (selTo) selTo.value = olapMonthTo;
 
+            updateOlapPresetButtonsState(preset);
             applyOlapFilter();
         }
 
-        function onOlapCustomTimeChange() {
+        function onOlapCustomTimeChange(changedField) {
             const selFrom = document.getElementById('olapMonthFrom');
             const selTo = document.getElementById('olapMonthTo');
             if (!selFrom || !selTo) return;
-            olapMonthFrom = selFrom.value;
-            olapMonthTo = selTo.value;
-            if (olapMonthFrom > olapMonthTo) {
-                olapMonthTo = olapMonthFrom;
-                selTo.value = olapMonthFrom;
+
+            let valFrom = selFrom.value;
+            let valTo = selTo.value;
+
+            // Thông minh điều chỉnh nếu khoảng thời gian bị ngược:
+            if (changedField === 'to') {
+                if (valTo < valFrom) {
+                    valFrom = valTo;
+                    selFrom.value = valTo;
+                }
+            } else {
+                if (valFrom > valTo) {
+                    valTo = valFrom;
+                    selTo.value = valFrom;
+                }
             }
+
+            olapMonthFrom = valFrom;
+            olapMonthTo = valTo;
+
+            olapTimePreset = detectMatchingOlapPreset(olapMonthFrom, olapMonthTo);
+            updateOlapPresetButtonsState(olapTimePreset);
+
             applyOlapFilter();
         }
 
@@ -3774,7 +3828,7 @@
 
             el.innerHTML = `
                 <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
-                    <div class="text-[10px] text-slate-400">Doanh Thu Kỳ Lọc</div>
+                    <div class="text-[10px] text-slate-400 flex items-center justify-between"><span>Doanh Thu Kỳ Lọc</span><span class="text-cyan-400 font-mono text-[9px] font-semibold">${olapMonthFrom === olapMonthTo ? olapMonthFrom : olapMonthFrom + ' → ' + olapMonthTo}</span></div>
                     <div class="text-base font-black text-emerald-400 mt-0.5">${formatVnCurrency(totalRev)}</div>
                     <div class="text-[10px] text-slate-500 mt-0.5">${(totalRev/1e9).toFixed(2)} Tỷ VNĐ</div>
                 </div>
@@ -7475,7 +7529,7 @@
             if (window.lucide) lucide.createIcons();
         }
 
-        const CURRENT_APP_BUILD = "v2026.11.03.v10.1";
+        const CURRENT_APP_BUILD = "v2026.11.05.v10.2";
 
         function forceClearCacheAndReload() {
             try {
