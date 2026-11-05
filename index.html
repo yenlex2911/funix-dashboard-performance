@@ -280,7 +280,7 @@
                     <!-- Build Version Badge -->
                     <span id="dashboardBuildBadge" class="hidden lg:inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-900 border border-slate-800 text-[10px] text-slate-400 font-mono" title="Phiên bản Dashboard hiện tại">
                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                        <span id="buildVersionText">v2026.10.21.v9.4</span>
+                        <span id="buildVersionText">v2026.11.05.v10.4</span>
                     </span>
 
                     <!-- User Profile & Logout Badge -->
@@ -3916,7 +3916,7 @@
             dongSp:     { name: 'Dòng SP DNE (Doanh thu)',     dtIdx: 3,  leadIdx: 3,  lookup: 'dsp' },
             dongSpLead: { name: 'Dòng SP Lead (MKT)',          dtIdx: 16, leadIdx: 3,  lookup: 'dsp' },
             course:     { name: 'Khóa học',                    dtIdx: 4,  leadIdx: 4,  lookup: 'c' },
-            khtsDne:    { name: 'Loại KHTS của DNE (Doanh thu)', dtIdx: 4, leadIdx: -1, lookup: 'c' },
+            khtsDne:    { name: 'Loại KHTS của DNE (Doanh thu)', dtIdx: 4, leadIdx: 4,  lookup: 'c' },
             khtsLead:   { name: 'Loại KHTS của Lead (MKT)',    dtIdx: 15, leadIdx: 4,  lookup: 'c' },
             mid:        { name: 'MID (Người chạy QC)',         dtIdx: 5,  leadIdx: 5,  lookup: 'mid' },
             hannix:     { name: 'Nhân sự Sales',               dtIdx: 6,  leadIdx: 6,  lookup: 'h' },
@@ -4302,10 +4302,20 @@
             }
 
             // Aggregate Lead
-            if (rowDim.leadIdx !== -1) {
+            if (rowDim.leadIdx !== -1 || colDim.leadIdx !== -1) {
                 filteredLead.forEach(item => {
-                    const rVal = rowDim.isDept ? getDeptName(item[rowDim.leadIdx], lookups) : (rowLookup[item[rowDim.leadIdx]] || 'Khác');
-                    const cVal = isFlatMode ? 'all' : (colDim.isDept ? getDeptName(item[colDim.leadIdx], lookups) : (colLookup[item[colDim.leadIdx]] || 'Khác'));
+                    let rVal = 'Khác';
+                    if (rowDim.leadIdx !== -1) {
+                        rVal = rowDim.isDept ? getDeptName(item[rowDim.leadIdx], lookups) : (rowLookup[item[rowDim.leadIdx]] || 'Khác');
+                    }
+                    let cVal = 'all';
+                    if (!isFlatMode) {
+                        if (colDim.leadIdx !== -1) {
+                            cVal = colDim.isDept ? getDeptName(item[colDim.leadIdx], lookups) : (colLookup[item[colDim.leadIdx]] || 'Khác');
+                        } else {
+                            cVal = 'Khác';
+                        }
+                    }
                     ensureCell(rVal, cVal);
                     matrix[rVal][cVal].leads += 1;
                     rowTotals[rVal].leads += 1;
@@ -7915,7 +7925,7 @@
             if (window.lucide) lucide.createIcons();
         }
 
-        const CURRENT_APP_BUILD = "v2026.11.05.v10.3";
+        const CURRENT_APP_BUILD = "v2026.11.05.v10.4";
 
         function forceClearCacheAndReload() {
             try {
