@@ -712,6 +712,7 @@
             <div>
                 <label class="block text-[11px] font-semibold text-slate-400 mb-1">Chiều cột (Col Dim)</label>
                 <select id="olapColDim" onchange="renderOlapMatrix()" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none">
+                    <option value="none">Không chia cột (Bảng phẳng 1 chiều)</option>
                     <option value="dongSp">Dòng SP DNE (Doanh thu)</option>
                     <option value="khtsDne">Loại KHTS của DNE (Doanh thu)</option>
                     <option value="dongSpLead">Dòng SP Lead (MKT)</option>
@@ -732,8 +733,10 @@
 
             <div>
                 <label class="block text-[11px] font-semibold text-slate-400 mb-1">Chỉ số (FACT Measure)</label>
-                <select id="olapFactMetric" onchange="renderOlapMatrix()" class="w-full bg-slate-900 border border-cyan-500/40 text-cyan-300 font-semibold rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none">
+                <select id="olapFactMetric" onchange="onOlapSingleFactMetricChange()" class="w-full bg-slate-900 border border-cyan-500/40 text-cyan-300 font-semibold rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none">
                     <option value="rev">Doanh thu (VNĐ)</option>
+                    <option value="cost">Chi phí MKT (VNĐ)</option>
+                    <option value="cpl">CPL (Chi phí / Lead - VNĐ)</option>
                     <option value="lead">Số lượng Lead</option>
                     <option value="deal">Số học viên (L6.1)</option>
                     <option value="cr">Tỷ lệ chuyển đổi (%)</option>
@@ -761,6 +764,30 @@
                     <option value="az">A - Z Tên hàng</option>
                 </select>
             </div>
+        </div>
+
+        <!-- Thanh Chọn Đa Chỉ Số (Multi-Metric Slicers & Quick Combos) -->
+        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-md">
+            <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-xs font-bold text-slate-300 flex items-center gap-1.5 whitespace-nowrap">
+                    <i data-lucide="layers" class="w-3.5 h-3.5 text-cyan-400"></i>
+                    Chọn các chỉ số hiển thị cùng lúc:
+                </span>
+                <div class="flex items-center gap-1.5 flex-wrap" id="olapMultiMetricPillsContainer"></div>
+            </div>
+            <div class="flex items-center gap-1.5 self-end md:self-center flex-wrap">
+                <span class="text-[11px] text-slate-400 whitespace-nowrap font-medium">Combo nhanh:</span>
+                <button type="button" onclick="setOlapMetricCombo('pnl')" class="px-2 py-1 text-[11px] rounded-md font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 transition-all shadow-sm">P&L (DT + Chi phí + CPL)</button>
+                <button type="button" onclick="setOlapMetricCombo('funnel')" class="px-2 py-1 text-[11px] rounded-md font-semibold bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 transition-all shadow-sm">Phễu MKT (Chi phí + Lead + CPL + CR)</button>
+                <button type="button" onclick="setOlapMetricCombo('sales')" class="px-2 py-1 text-[11px] rounded-md font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition-all shadow-sm">Bán hàng (DT + HV + ARPU)</button>
+                <button type="button" onclick="setOlapMetricCombo('single')" class="px-2 py-1 text-[11px] rounded-md font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-all shadow-sm">Đơn chỉ số</button>
+            </div>
+        </div>
+
+        <!-- Cảnh báo Điểm 1 (Cách B): khi chọn Chi phí/CPL nhưng chiều cắt không hỗ trợ phân bổ -->
+        <div id="olapCostDimWarning" class="hidden p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2.5 shadow-sm">
+            <i data-lucide="info" class="w-4 h-4 text-amber-400 shrink-0"></i>
+            <span><strong>Lưu ý:</strong> Dữ liệu Chi phí MKT và CPL được phân bổ chuẩn theo <strong>Dòng SP / Sản phẩm</strong> và <strong>Tháng</strong>. Các chiều cắt khác (Kênh MKT, Sales, MID, Phòng tuyển sinh) không có phân bổ chi phí chi tiết nên hiển thị "<strong>-</strong>" ở từng ô, tổng chi phí toàn kỳ được hiển thị ở cột / dòng <strong>TỔNG CỘNG</strong>.</span>
         </div>
 
         <!-- VIEW 1: BẢNG XOAY PIVOT MATRIX -->
@@ -3575,6 +3602,7 @@
             const leadTypes = Array.from(new Set((bundle.lead || []).map(r => (lookups.c && r[4] !== undefined) ? lookups.c[r[4]] : '').filter(Boolean))).sort();
             populateSel('olapFilterLeadType', leadTypes, 'Tất cả loại lead');
 
+            renderOlapMultiMetricPills();
             _olapInitialized = true;
         }
 
@@ -3783,11 +3811,10 @@
 
         function renderOlapSummaryKPIs() {
             const { filteredDt, filteredLead, lookups } = getFilteredOlapData();
-            // Tổng doanh thu: Tính toàn bộ các dòng doanh thu (bao gồm cả Branding IT và Refund)
+            // Tổng doanh thu
             const totalRev = filteredDt.reduce((sum, r) => sum + r[9], 0);
 
-            // Dữ liệu hợp lệ cho ARPU, ARPE, CR và Số học viên (L6.1):
-            // Loại trừ Loại KHTS Branding IT và Loại nhập học là Refund
+            // Dữ liệu hợp lệ cho ARPU, ARPE, CR và Số học viên (L6.1)
             const validDt = filteredDt.filter(r => !isExcludedFromArpuCr(r, lookups));
             const validRev = validDt.reduce((sum, r) => sum + r[9], 0);
             const totalDeals = validDt.length;
@@ -3796,7 +3823,7 @@
             const cr = totalLeads > 0 ? ((totalDeals / totalLeads) * 100) : 0;
             const aov = totalDeals > 0 ? (validRev / totalDeals) : 0;
 
-            // ARPE: Doanh thu hợp lệ / Số sale phát sinh doanh thu hợp lệ (loại trừ 'Khác')
+            // ARPE
             const activeSales = new Set();
             validDt.forEach(r => {
                 const sName = (lookups.h && r[6] !== undefined) ? lookups.h[r[6]] : '';
@@ -3807,8 +3834,6 @@
 
             const stMap = {};
             filteredDt.forEach(r => {
-                // Chu kỳ bán hàng chuẩn từ cột AC sheet Doanh thu (r[10])
-                // Bỏ qua Loại KHTS là Branding-IT... và Loại nhập học chứa Refund
                 const days = (r[10] || 0);
                 const isExcluded = isExcludedFromArpuCr(r, lookups);
                 const isCycleEligible = !isExcluded && (r[13] !== undefined ? r[13] === 1 : (days > 0));
@@ -3823,14 +3848,39 @@
             const totalCycleDays = Object.values(stMap).reduce((a, b) => a + b, 0);
             const avgCycle = uniqueStudents > 0 ? (totalCycleDays / uniqueStudents) : 0;
 
+            // Chi phí MKT và CPL toàn kỳ lọc (Nguồn từ Menu 5)
+            const mList = (lookups.m || []).filter(m => m >= olapMonthFrom && m <= olapMonthTo);
+            const totalCost = getOlapCostSum('Tổng', mList);
+            const avgCpl = totalLeads > 0 ? Math.round(totalCost / totalLeads) : 0;
+
             const el = document.getElementById('olapSummaryMetrics');
             if (!el) return;
 
+            el.className = "grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5 pt-2 border-t border-slate-800/80";
             el.innerHTML = `
                 <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
-                    <div class="text-[10px] text-slate-400 flex items-center justify-between"><span>Doanh Thu Kỳ Lọc</span><span class="text-cyan-400 font-mono text-[9px] font-semibold">${olapMonthFrom === olapMonthTo ? olapMonthFrom : olapMonthFrom + ' → ' + olapMonthTo}</span></div>
+                    <div class="text-[10px] text-slate-400 flex items-center justify-between">
+                        <span>Doanh Thu Kỳ Lọc</span>
+                        <span class="text-cyan-400 font-mono text-[9px] font-semibold">${olapMonthFrom === olapMonthTo ? olapMonthFrom : olapMonthFrom + ' → ' + olapMonthTo}</span>
+                    </div>
                     <div class="text-base font-black text-emerald-400 mt-0.5">${formatVnCurrency(totalRev)}</div>
                     <div class="text-[10px] text-slate-500 mt-0.5">${(totalRev/1e9).toFixed(2)} Tỷ VNĐ</div>
+                </div>
+                <div class="bg-slate-950/70 border border-rose-500/30 rounded-xl p-3">
+                    <div class="text-[10px] text-rose-300 flex items-center justify-between">
+                        <span>Chi Phí MKT</span>
+                        <span class="text-rose-400 font-mono text-[9px] font-bold">Menu 5</span>
+                    </div>
+                    <div class="text-base font-black text-rose-400 mt-0.5">${formatVnCurrency(totalCost)}</div>
+                    <div class="text-[10px] text-slate-500 mt-0.5">${(totalCost/1e6).toFixed(1)} Tr VNĐ</div>
+                </div>
+                <div class="bg-slate-950/70 border border-amber-500/30 rounded-xl p-3">
+                    <div class="text-[10px] text-amber-300 flex items-center justify-between">
+                        <span>CPL TB (Chi phí/Lead)</span>
+                        <span class="text-amber-400 font-mono text-[9px] font-bold">${totalLeads.toLocaleString('vi-VN')} L</span>
+                    </div>
+                    <div class="text-base font-black text-amber-400 mt-0.5">${formatVnCurrency(avgCpl)}</div>
+                    <div class="text-[10px] text-slate-500 mt-0.5">VNĐ / Lead hợp lệ</div>
                 </div>
                 <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
                     <div class="text-[10px] text-slate-400">Số Lượng Lead</div>
@@ -3839,7 +3889,7 @@
                 </div>
                 <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
                     <div class="text-[10px] text-slate-400">Số Học Viên (L6.1)</div>
-                    <div class="text-base font-black text-amber-400 mt-0.5">${totalDeals.toLocaleString('vi-VN')}</div>
+                    <div class="text-base font-black text-amber-300 mt-0.5">${totalDeals.toLocaleString('vi-VN')}</div>
                     <div class="text-[10px] text-slate-500 mt-0.5">Khớp học phí</div>
                 </div>
                 <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
@@ -3849,7 +3899,7 @@
                 </div>
                 <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
                     <div class="text-[10px] text-slate-400">Chu Kỳ Bán Hàng TB</div>
-                    <div class="text-base font-black text-amber-300 mt-0.5">${avgCycle > 0 ? avgCycle.toFixed(1).replace('.', ',') + ' Ngày' : '-'}</div>
+                    <div class="text-base font-black text-amber-200 mt-0.5">${avgCycle > 0 ? avgCycle.toFixed(1).replace('.', ',') + ' Ngày' : '-'}</div>
                     <div class="text-[10px] text-slate-400 mt-0.5 font-mono">${totalCycleDays.toLocaleString('vi-VN')}d / ${uniqueStudents.toLocaleString('vi-VN')} HV</div>
                 </div>
                 <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
@@ -3857,15 +3907,11 @@
                     <div class="text-base font-black text-cyan-400 mt-0.5">${formatVnCurrency(aov)}</div>
                     <div class="text-[10px] text-slate-500 mt-0.5">Doanh thu / HV (L6.1)</div>
                 </div>
-                <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3 col-span-2 sm:col-span-1">
-                    <div class="text-[10px] text-slate-400">ARPE</div>
-                    <div class="text-base font-black text-emerald-400 mt-0.5">${formatVnCurrency(arpe)}</div>
-                    <div class="text-[10px] text-slate-500 mt-0.5">Doanh thu TB / Đầu Sale (${activeSalesCount} Sales)</div>
-                </div>
             `;
         }
 
         const DIM_MAPPINGS = {
+            none:       { name: 'Không chia cột (Bảng phẳng)', dtIdx: -1, leadIdx: -1, lookup: '' },
             channel:    { name: 'Kênh Marketing',              dtIdx: 1,  leadIdx: 1,  lookup: 'ch' },
             dongSp:     { name: 'Dòng SP DNE (Doanh thu)',     dtIdx: 3,  leadIdx: 3,  lookup: 'dsp' },
             dongSpLead: { name: 'Dòng SP Lead (MKT)',          dtIdx: 16, leadIdx: 3,  lookup: 'dsp' },
@@ -3933,16 +3979,247 @@
             if (olapCurrentView === 'compare') renderOlapCompareChart();
         }
 
+        
+        const OLAP_METRIC_CONFIG = {
+            rev:      { key: 'rev',      name: 'Doanh thu',     unit: 'VNĐ',      color: 'text-emerald-400', border: 'border-emerald-500/40', bg: 'bg-emerald-500/10' },
+            cost:     { key: 'cost',     name: 'Chi phí MKT',   unit: 'VNĐ',      color: 'text-rose-400',    border: 'border-rose-500/40',    bg: 'bg-rose-500/10' },
+            cpl:      { key: 'cpl',      name: 'CPL',           unit: 'VNĐ/Lead', color: 'text-amber-400',   border: 'border-amber-500/40',   bg: 'bg-amber-500/10' },
+            lead:     { key: 'lead',     name: 'Số Lead',       unit: 'Lead',     color: 'text-sky-400',     border: 'border-sky-500/40',     bg: 'bg-sky-500/10' },
+            deal:     { key: 'deal',     name: 'Số HV (L6.1)',  unit: 'HV',       color: 'text-amber-300',   border: 'border-amber-400/40',   bg: 'bg-amber-400/10' },
+            cr:       { key: 'cr',       name: 'Tỷ lệ CR',      unit: '%',        color: 'text-purple-400',  border: 'border-purple-500/40',  bg: 'bg-purple-500/10' },
+            aov:      { key: 'aov',      name: 'ARPU',          unit: 'VNĐ/HV',   color: 'text-cyan-400',    border: 'border-cyan-500/40',    bg: 'bg-cyan-500/10' },
+            cycleAvg: { key: 'cycleAvg', name: 'Chu kỳ TB',     unit: 'Ngày',     color: 'text-amber-200',   border: 'border-amber-300/40',   bg: 'bg-amber-300/10' },
+            arpe:     { key: 'arpe',     name: 'ARPE',          unit: 'VNĐ/Sale', color: 'text-emerald-300', border: 'border-emerald-400/40', bg: 'bg-emerald-400/10' }
+        };
+
+        let olapSelectedMetrics = ['rev'];
+
+        function onOlapSingleFactMetricChange() {
+            const val = document.getElementById('olapFactMetric')?.value || 'rev';
+            olapSelectedMetrics = [val];
+            renderOlapMultiMetricPills();
+            renderOlapMatrix();
+            if (olapCurrentView === 'compare') renderOlapCompareChart();
+        }
+
+        function toggleOlapMetric(mKey) {
+            if (olapSelectedMetrics.includes(mKey)) {
+                if (olapSelectedMetrics.length > 1) {
+                    olapSelectedMetrics = olapSelectedMetrics.filter(k => k !== mKey);
+                }
+            } else {
+                olapSelectedMetrics.push(mKey);
+            }
+            const selEl = document.getElementById('olapFactMetric');
+            if (selEl && olapSelectedMetrics.length === 1) {
+                selEl.value = olapSelectedMetrics[0];
+            }
+            renderOlapMultiMetricPills();
+            renderOlapMatrix();
+            if (olapCurrentView === 'compare') renderOlapCompareChart();
+        }
+
+        function setOlapMetricCombo(comboType) {
+            if (comboType === 'pnl') {
+                olapSelectedMetrics = ['rev', 'cost', 'cpl'];
+            } else if (comboType === 'funnel') {
+                olapSelectedMetrics = ['cost', 'lead', 'cpl', 'cr'];
+            } else if (comboType === 'sales') {
+                olapSelectedMetrics = ['rev', 'deal', 'aov'];
+            } else if (comboType === 'single') {
+                olapSelectedMetrics = [document.getElementById('olapFactMetric')?.value || 'rev'];
+            }
+            const selEl = document.getElementById('olapFactMetric');
+            if (selEl && olapSelectedMetrics.length === 1) {
+                selEl.value = olapSelectedMetrics[0];
+            }
+            renderOlapMultiMetricPills();
+            renderOlapMatrix();
+            if (olapCurrentView === 'compare') renderOlapCompareChart();
+        }
+
+        function renderOlapMultiMetricPills() {
+            const container = document.getElementById('olapMultiMetricPillsContainer');
+            if (!container) return;
+            const keys = ['rev', 'cost', 'cpl', 'lead', 'deal', 'cr', 'aov', 'cycleAvg', 'arpe'];
+            container.innerHTML = keys.map(k => {
+                const conf = OLAP_METRIC_CONFIG[k];
+                const isActive = olapSelectedMetrics.includes(k);
+                const activeCls = isActive 
+                    ? `${conf.bg} ${conf.color} font-bold ${conf.border} shadow-sm` 
+                    : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-slate-300';
+                const checkIcon = isActive ? '<i data-lucide="check-square" class="w-3.5 h-3.5"></i>' : '<i data-lucide="square" class="w-3.5 h-3.5 text-slate-500"></i>';
+                return `
+                    <button type="button" onclick="toggleOlapMetric('${k}')" class="px-2 py-1 rounded-lg text-xs border flex items-center gap-1.5 transition-all ${activeCls}">
+                        ${checkIcon}
+                        <span>${conf.name}</span>
+                    </button>
+                `;
+            }).join('');
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function getOlapMonthToKeyMap() {
+            const ty = (typeof APP_DATA !== 'undefined' && APP_DATA.tyTrongAllYears) ? APP_DATA.tyTrongAllYears : null;
+            if (!ty || !ty.periods) return {};
+            const map = {};
+            ['2024', '2025', '2026'].forEach(year => {
+                (ty.periods[year] || []).forEach(col => {
+                    const mMatch = (col.label || '').match(/T0?(\d+)\/(\d+)/);
+                    if (mMatch) {
+                        const m = mMatch[1].padStart(2, '0');
+                        const y = mMatch[2];
+                        map[y + '-' + m] = col.key;
+                    }
+                });
+            });
+            return map;
+        }
+
+        function mapCourseToTyProduct(cName) {
+            if (!cName) return null;
+            const low = cName.toLowerCase().trim();
+            if (low.includes('branding')) return 'Branding IT';
+            if (low.includes('wings')) return 'FUNiX Wings';
+            if (low.includes('fintech')) return 'Fintech';
+            if (low.includes('chứng chỉ') || low.includes('istqb')) return 'Chứng chỉ';
+            if (low.includes('brain engineering')) return 'Brain Engineering';
+            if (low.includes('xup for it')) return 'xUp for IT';
+            if (low.includes('tester') || low.includes('qc')) return 'Tester';
+            if (low.includes('1-n') || low.includes('test')) return 'xUP - mass (1-n, test)';
+            if (low.includes('xup')) return 'xUP - nâng cao năng lực';
+            if (low.includes('ndl') || low.includes('người đi làm') || low.startsWith('p1') || low.includes('software engineering') || low.includes('se -') || low.includes('se-')) return 'SE HS-SV-NDL';
+            if (low.includes('data analysis') || low.includes('ai data analysis')) return 'Data analysis';
+            if (low.includes('business analysis') || low.includes('ba/pm/po')) return 'Business Analyst';
+            if (low.includes('automotive')) return 'Automotive';
+            if (low.includes('blockchain')) return 'Blockchain';
+            if (low.includes('datascience')) return 'DataScience';
+            if (low.includes('machine learning')) return 'MachineLearing';
+            if (low.includes('iot')) return 'IOT';
+            if (low.includes('data engineering')) return 'Data Engineering';
+            if (low.includes('aws') || low.includes('cloud')) return 'CloudComputing (AWS)';
+            if (low.includes('game')) return 'Game';
+            if (low.includes('mobile')) return 'Mobile';
+            if (low.includes('nhật bản') || low.includes('tiếng nhật')) return 'Java - Nhật Bản';
+            if (low.includes('full-stack') || low.includes('web')) return 'Web Full-stack';
+            if (low.includes('java')) return 'Lập trình Java';
+            if (low.includes('fresher')) return 'Fresher';
+            if (low.includes('xseri')) return 'xSeri';
+            if (low.includes('scratch')) return 'Kid - Scratch';
+            if (low.includes('python')) return 'Kid - Khoa học máy tính với Python (CS)';
+            if (low.includes('roblox')) return 'Roblox';
+            if (low.includes('kid') || low.includes('funbot')) return 'Lập trình kids - other';
+            return null;
+        }
+
+        function getOlapCostSum(prodOrDsp, monthsList) {
+            const ty = (typeof APP_DATA !== 'undefined' && APP_DATA.tyTrongAllYears) ? APP_DATA.tyTrongAllYears : null;
+            if (!ty || !ty.products) return 0;
+            const pObj = ty.products[prodOrDsp];
+            if (!pObj || !pObj['Chi phí']) return 0;
+            const mKeyMap = getOlapMonthToKeyMap();
+            let sum = 0;
+            monthsList.forEach(m => {
+                const k = mKeyMap[m];
+                if (k && pObj['Chi phí'][k]) sum += (pObj['Chi phí'][k].val || 0);
+            });
+            return sum;
+        }
+
+        function calcOlapCellCost(rowDimKey, rKey, colDimKey, cKey, filterMonths) {
+            // Grand Total
+            if (rKey === null && (cKey === null || cKey === 'all')) {
+                return getOlapCostSum('Tổng', filterMonths);
+            }
+            
+            // Row Total (when cKey === null or cKey === 'all')
+            if (cKey === null || cKey === 'all') {
+                if (['dongSp', 'dongSpLead'].includes(rowDimKey)) {
+                    return getOlapCostSum(rKey, filterMonths);
+                }
+                if (['course', 'khtsDne', 'khtsLead'].includes(rowDimKey)) {
+                    const prod = mapCourseToTyProduct(rKey);
+                    return prod ? getOlapCostSum(prod, filterMonths) : null;
+                }
+                if (['leadMonth', 'dtMonth'].includes(rowDimKey)) {
+                    return getOlapCostSum('Tổng', [rKey]);
+                }
+                return null;
+            }
+
+            // Col Total (when rKey === null)
+            if (rKey === null) {
+                if (['dongSp', 'dongSpLead'].includes(colDimKey)) {
+                    return getOlapCostSum(cKey, filterMonths);
+                }
+                if (['course', 'khtsDne', 'khtsLead'].includes(colDimKey)) {
+                    const prod = mapCourseToTyProduct(cKey);
+                    return prod ? getOlapCostSum(prod, filterMonths) : null;
+                }
+                if (['leadMonth', 'dtMonth'].includes(colDimKey)) {
+                    return getOlapCostSum('Tổng', [cKey]);
+                }
+                return null;
+            }
+
+            // Specific Cell (rKey, cKey):
+            // 1. Dòng SP x Tháng
+            if (['dongSp', 'dongSpLead'].includes(rowDimKey) && ['leadMonth', 'dtMonth'].includes(colDimKey)) {
+                return getOlapCostSum(rKey, [cKey]);
+            }
+            if (['leadMonth', 'dtMonth'].includes(rowDimKey) && ['dongSp', 'dongSpLead'].includes(colDimKey)) {
+                return getOlapCostSum(cKey, [rKey]);
+            }
+
+            // 2. Khóa học x Tháng
+            if (['course', 'khtsDne', 'khtsLead'].includes(rowDimKey) && ['leadMonth', 'dtMonth'].includes(colDimKey)) {
+                const prod = mapCourseToTyProduct(rKey);
+                return prod ? getOlapCostSum(prod, [cKey]) : null;
+            }
+            if (['leadMonth', 'dtMonth'].includes(rowDimKey) && ['course', 'khtsDne', 'khtsLead'].includes(colDimKey)) {
+                const prod = mapCourseToTyProduct(cKey);
+                return prod ? getOlapCostSum(prod, [rKey]) : null;
+            }
+
+            // 3. Khóa học x Dòng SP
+            if (['course', 'khtsDne', 'khtsLead'].includes(rowDimKey) && ['dongSp', 'dongSpLead'].includes(colDimKey)) {
+                const prod = mapCourseToTyProduct(rKey);
+                return prod ? getOlapCostSum(prod, filterMonths) : null;
+            }
+            if (['dongSp', 'dongSpLead'].includes(rowDimKey) && ['course', 'khtsDne', 'khtsLead'].includes(colDimKey)) {
+                const prod = mapCourseToTyProduct(cKey);
+                return prod ? getOlapCostSum(prod, filterMonths) : null;
+            }
+
+            // Not allocatable
+            return null;
+        }
+
         function renderOlapMatrix() {
             const rowDimKey = document.getElementById('olapRowDim')?.value || 'channel';
             const colDimKey = document.getElementById('olapColDim')?.value || 'dongSp';
-            const factMetric = document.getElementById('olapFactMetric')?.value || 'rev';
             const displayMode = document.getElementById('olapDisplayMode')?.value || 'val';
             const sortMode = document.getElementById('olapSortMode')?.value || 'desc';
 
             const { filteredDt, filteredLead, lookups } = getFilteredOlapData();
-            const rowDim = DIM_MAPPINGS[rowDimKey];
-            const colDim = DIM_MAPPINGS[colDimKey];
+            const rowDim = DIM_MAPPINGS[rowDimKey] || DIM_MAPPINGS['channel'];
+            const colDim = DIM_MAPPINGS[colDimKey] || DIM_MAPPINGS['dongSp'];
+            const isFlatMode = (colDimKey === 'none');
+
+            // Months in filter
+            const filterMonths = (lookups.m || []).filter(m => m >= olapMonthFrom && m <= olapMonthTo);
+
+            // Cost Dim Warning (Rule B: Chi phí & CPL yêu cầu Hàng hoặc Cột là Dòng SP, Khóa học, hoặc Tháng)
+            const hasCostDimension = ['dongSp', 'dongSpLead', 'course', 'khtsDne', 'khtsLead', 'leadMonth', 'dtMonth'].includes(rowDimKey) ||
+                                     ['dongSp', 'dongSpLead', 'course', 'khtsDne', 'khtsLead', 'leadMonth', 'dtMonth'].includes(colDimKey);
+            const warningEl = document.getElementById('olapCostDimWarning');
+            if (warningEl) {
+                if ((olapSelectedMetrics.includes('cost') || olapSelectedMetrics.includes('cpl')) && !hasCostDimension) {
+                    warningEl.classList.remove('hidden');
+                } else {
+                    warningEl.classList.add('hidden');
+                }
+            }
 
             const getDeptName = (saleIdx, lk) => {
                 const s = (lk.h && saleIdx !== undefined) ? lk.h[saleIdx] : 'Khác';
@@ -3953,7 +4230,7 @@
             const rowLookup = lookups[rowDim.lookup] || [];
             const colLookup = lookups[colDim.lookup] || [];
 
-            // 2D Matrix: cell = { rev: 0, validRev: 0, validDeals: 0, deals: 0, leads: 0, studentMap: {}, salesMap: {} }
+            // Matrix structure
             const matrix = {};
             const rowTotals = {};
             const colTotals = {};
@@ -3966,29 +4243,26 @@
                 if (!colTotals[c]) colTotals[c] = { rev: 0, validRev: 0, validDeals: 0, deals: 0, leads: 0, studentMap: {}, salesMap: {} };
             };
 
-            // Aggregate DT: [m, ch, ls, dsp, c, mid, h, tg, cy, rev, days, id, date, cycle_eligible, lead_m]
-            if (rowDim.dtIdx !== -1 && colDim.dtIdx !== -1) {
+            // Aggregate DT
+            if (rowDim.dtIdx !== -1) {
                 filteredDt.forEach(item => {
                     const rVal = rowDim.isDept ? getDeptName(item[rowDim.dtIdx], lookups) : (rowLookup[item[rowDim.dtIdx]] || 'Khác');
-                    const cVal = colDim.isDept ? getDeptName(item[colDim.dtIdx], lookups) : (colLookup[item[colDim.dtIdx]] || 'Khác');
+                    const cVal = isFlatMode ? 'all' : (colDim.isDept ? getDeptName(item[colDim.dtIdx], lookups) : (colLookup[item[colDim.dtIdx]] || 'Khác'));
                     ensureCell(rVal, cVal);
                     const rev = item[9] || 0;
                     const days = item[10] || 0;
                     const stId = (lookups.id && item[11] !== undefined) ? lookups.id[item[11]] : ('d_' + item[0] + '_' + rev);
 
-                    // Tổng doanh thu (luôn cộng toàn bộ)
                     matrix[rVal][cVal].rev += rev;
                     rowTotals[rVal].rev += rev;
                     colTotals[cVal].rev += rev;
                     grandTotal.rev += rev;
 
-                    // Tổng tất cả giao dịch
                     matrix[rVal][cVal].deals += 1;
                     rowTotals[rVal].deals += 1;
                     colTotals[cVal].deals += 1;
                     grandTotal.deals += 1;
 
-                    // Dòng hợp lệ cho ARPU, ARPE, CR và Số học viên L6.1 (Loại trừ Refund & Loại KHTS Branding IT)
                     const isExcluded = isExcludedFromArpuCr(item, lookups);
                     if (!isExcluded) {
                         matrix[rVal][cVal].validRev += rev;
@@ -4009,8 +4283,6 @@
                         }
                     }
 
-                    // Chu kỳ bán hàng: Lấy chuẩn từ cột AC sheet Doanh thu (days = item[10])
-                    // Bỏ qua Loại KHTS là Branding-IT... và Loại nhập học chứa Refund
                     const isCycleEligible = !isExcluded && (item[13] !== undefined ? item[13] === 1 : (days > 0));
                     if (isCycleEligible && days > 0) {
                         if (matrix[rVal][cVal].studentMap[stId] === undefined || days > matrix[rVal][cVal].studentMap[stId]) {
@@ -4029,11 +4301,11 @@
                 });
             }
 
-            // Aggregate Leads: [m, ch, ls, dsp, c, mid, h, tg, st]
-            if (rowDim.leadIdx !== -1 && colDim.leadIdx !== -1) {
+            // Aggregate Lead
+            if (rowDim.leadIdx !== -1) {
                 filteredLead.forEach(item => {
                     const rVal = rowDim.isDept ? getDeptName(item[rowDim.leadIdx], lookups) : (rowLookup[item[rowDim.leadIdx]] || 'Khác');
-                    const cVal = colDim.isDept ? getDeptName(item[colDim.leadIdx], lookups) : (colLookup[item[colDim.leadIdx]] || 'Khác');
+                    const cVal = isFlatMode ? 'all' : (colDim.isDept ? getDeptName(item[colDim.leadIdx], lookups) : (colLookup[item[colDim.leadIdx]] || 'Khác'));
                     ensureCell(rVal, cVal);
                     matrix[rVal][cVal].leads += 1;
                     rowTotals[rVal].leads += 1;
@@ -4042,160 +4314,268 @@
                 });
             }
 
-            const getMetricVal = (obj) => {
-                if (!obj) return null;
-                if (factMetric === 'rev') return obj.rev;
-                if (factMetric === 'deal') return obj.validDeals || 0;
-                if (factMetric === 'lead') return obj.leads;
-                if (factMetric === 'cr') return obj.leads > 0 ? (((obj.validDeals || 0) / obj.leads) * 100) : 0;
-                if (factMetric === 'cycleAvg') {
-                    const stMap = obj.studentMap || {};
+            // Metric Value Helper
+            const getMetricVal = (mKey, obj, rKey, cKey) => {
+                if (!obj && mKey !== 'cost' && mKey !== 'cpl') return null;
+                if (mKey === 'rev') return obj ? obj.rev : 0;
+                if (mKey === 'deal') return obj ? (obj.validDeals || 0) : 0;
+                if (mKey === 'lead') return obj ? obj.leads : 0;
+                if (mKey === 'cr') return (obj && obj.leads > 0) ? (((obj.validDeals || 0) / obj.leads) * 100) : 0;
+                if (mKey === 'cycleAvg') {
+                    const stMap = obj ? (obj.studentMap || {}) : {};
                     const stKeys = Object.keys(stMap);
                     if (stKeys.length === 0) return null;
                     const totDays = stKeys.reduce((sum, k) => sum + (stMap[k] || 0), 0);
                     return totDays / stKeys.length;
                 }
-                if (factMetric === 'aov') {
-                    const vDeals = obj.validDeals || 0;
+                if (mKey === 'aov') {
+                    const vDeals = obj ? (obj.validDeals || 0) : 0;
                     return vDeals > 0 ? ((obj.validRev || 0) / vDeals) : 0;
                 }
-                if (factMetric === 'arpe') {
-                    const sMap = obj.salesMap || {};
+                if (mKey === 'arpe') {
+                    const sMap = obj ? (obj.salesMap || {}) : {};
                     const sCount = Object.keys(sMap).length;
-                    return sCount > 0 ? ((obj.validRev || 0) / sCount) : 0;
+                    return sCount > 0 ? ((obj ? obj.validRev : 0) / sCount) : 0;
+                }
+                if (mKey === 'cost') {
+                    return calcOlapCellCost(rowDimKey, rKey, colDimKey, cKey, filterMonths);
+                }
+                if (mKey === 'cpl') {
+                    const cCost = calcOlapCellCost(rowDimKey, rKey, colDimKey, cKey, filterMonths);
+                    if (cCost === null) return null;
+                    const lCount = obj ? (obj.leads || 0) : 0;
+                    return lCount > 0 ? Math.round(cCost / lCount) : 0;
                 }
                 return 0;
             };
 
-            let rowKeys = Object.keys(matrix).filter(r => (rowTotals[r].validDeals || 0) > 0 || rowTotals[r].deals > 0 || rowTotals[r].leads > 0 || rowTotals[r].rev !== 0);
-            let colKeys = Object.keys(colTotals).filter(c => (colTotals[c].validDeals || 0) > 0 || colTotals[c].deals > 0 || colTotals[c].leads > 0 || colTotals[c].rev !== 0);
+            const primaryMetric = olapSelectedMetrics[0] || 'rev';
 
-            // Limit cols if too many
-            if (colKeys.length > 15) {
-                colKeys.sort((a, b) => (getMetricVal(colTotals[b]) || 0) - (getMetricVal(colTotals[a]) || 0));
-                colKeys = colKeys.slice(0, 15);
+            let rowKeys = Object.keys(matrix).filter(r => (rowTotals[r].validDeals || 0) > 0 || rowTotals[r].deals > 0 || rowTotals[r].leads > 0 || rowTotals[r].rev !== 0);
+            let colKeys = isFlatMode ? [] : Object.keys(colTotals).filter(c => (colTotals[c].validDeals || 0) > 0 || colTotals[c].deals > 0 || colTotals[c].leads > 0 || colTotals[c].rev !== 0);
+
+            // Limit columns if too wide
+            if (!isFlatMode && colKeys.length > 12) {
+                colKeys.sort((a, b) => (getMetricVal(primaryMetric, colTotals[b], null, b) || 0) - (getMetricVal(primaryMetric, colTotals[a], null, a) || 0));
+                colKeys = colKeys.slice(0, 12);
             }
 
             // Sort rows
             if (sortMode === 'desc') {
-                rowKeys.sort((a, b) => (getMetricVal(rowTotals[b]) || 0) - (getMetricVal(rowTotals[a]) || 0));
+                rowKeys.sort((a, b) => (getMetricVal(primaryMetric, rowTotals[b], b, null) || 0) - (getMetricVal(primaryMetric, rowTotals[a], a, null) || 0));
             } else if (sortMode === 'asc') {
-                rowKeys.sort((a, b) => (getMetricVal(rowTotals[a]) || 0) - (getMetricVal(rowTotals[b]) || 0));
+                rowKeys.sort((a, b) => (getMetricVal(primaryMetric, rowTotals[a], a, null) || 0) - (getMetricVal(primaryMetric, rowTotals[b], b, null) || 0));
             } else if (sortMode === 'az') {
                 rowKeys.sort((a, b) => a.localeCompare(b));
             }
 
-            let maxVal = 0;
-            rowKeys.forEach(r => {
-                colKeys.forEach(c => {
-                    const v = getMetricVal(matrix[r]?.[c]);
-                    if (v !== null && v > maxVal) maxVal = v;
-                });
-            });
-
-            const formatCell = (val, rKey, cKey, cellObj) => {
+            const formatCell = (mKey, val, rKey, cKey, cellObj) => {
                 if (val === null || val === undefined) return '<span class="text-slate-600">-</span>';
                 if (displayMode === 'row') {
-                    const base = getMetricVal(rowTotals[rKey]);
+                    const base = getMetricVal(mKey, rowTotals[rKey], rKey, null);
                     return (base && base > 0) ? ((val / base) * 100).toFixed(1) + '%' : '-';
                 }
                 if (displayMode === 'col') {
-                    const base = getMetricVal(colTotals[cKey]);
+                    const base = getMetricVal(mKey, colTotals[cKey], null, cKey);
                     return (base && base > 0) ? ((val / base) * 100).toFixed(1) + '%' : '-';
                 }
                 if (displayMode === 'total') {
-                    const base = getMetricVal(grandTotal);
+                    const base = getMetricVal(mKey, grandTotal, null, null);
                     return (base && base > 0) ? ((val / base) * 100).toFixed(1) + '%' : '-';
                 }
-                if (factMetric === 'rev' || factMetric === 'aov') return formatVnCurrency(val);
-                if (factMetric === 'arpe') {
-                    const formatted = formatVnCurrency(val);
-                    if (displayMode === 'val' && cellObj && cellObj.salesMap) {
-                        const sCount = Object.keys(cellObj.salesMap).length;
-                        return `<div><span class="font-bold text-emerald-400">${formatted}</span><span class="block text-[10px] text-slate-400 font-normal">(${sCount} sales)</span></div>`;
-                    }
-                    return formatted;
-                }
-                if (factMetric === 'cr') return val.toFixed(2).replace('.', ',') + '%';
-                if (factMetric === 'cycleAvg') {
+                if (mKey === 'rev' || mKey === 'aov') return formatVnCurrency(val);
+                if (mKey === 'cost') return `<span class="text-rose-400 font-semibold">${formatVnCurrency(val)}</span>`;
+                if (mKey === 'cpl') return `<span class="text-amber-400 font-bold">${val > 0 ? formatVnCurrency(val) : '0 đ'}</span>`;
+                if (mKey === 'arpe') return formatVnCurrency(val);
+                if (mKey === 'cr') return val.toFixed(2).replace('.', ',') + '%';
+                if (mKey === 'cycleAvg') {
                     const rounded = Math.round(val * 10) / 10;
-                    const valStr = (Number.isInteger(rounded) ? rounded : rounded.toFixed(1).replace('.', ',')) + ' ngày';
-                    if (cellObj && cellObj.studentMap) {
-                        const sCount = Object.keys(cellObj.studentMap).length;
-                        const totDays = Object.values(cellObj.studentMap).reduce((a, b) => a + b, 0);
-                        return `<div><span class="font-bold text-amber-300">${valStr}</span><span class="block text-[10px] text-slate-400 font-normal">(${totDays.toLocaleString('vi-VN')}d / ${sCount} HV)</span></div>`;
-                    }
-                    return valStr;
+                    return (Number.isInteger(rounded) ? rounded : rounded.toFixed(1).replace('.', ',')) + ' ngày';
                 }
                 return val.toLocaleString('vi-VN');
-            };
-
-            const getHeatmapBg = (val) => {
-                if (val === null || val === undefined || maxVal <= 0) return '';
-                const ratio = Math.min(1, val / maxVal);
-                if (ratio > 0.7) return 'bg-cyan-500/25 text-cyan-200 font-bold';
-                if (ratio > 0.4) return 'bg-cyan-500/15 text-slate-200';
-                if (ratio > 0.15) return 'bg-cyan-500/5 text-slate-300';
-                return '';
             };
 
             const table = document.getElementById('olapMatrixTable');
             if (!table) return;
 
-            let html = `
-                <thead>
-                    <tr class="bg-slate-900 border-b border-slate-800 text-[11px] text-slate-400">
-                        <th class="py-3 px-3 font-bold text-slate-200 sticky left-0 bg-slate-900 z-10 border-r border-slate-800">
-                            ${rowDim.name} \ ${colDim.name}
-                        </th>
-                        ${colKeys.map(c => `<th class="py-3 px-3 text-right font-semibold whitespace-nowrap">${c}</th>`).join('')}
-                        <th class="py-3 px-3 text-right font-black text-cyan-400 bg-slate-900/90 border-l border-slate-800">TỔNG CỘNG</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-800/60 font-mono text-xs">
-            `;
+            let html = '';
 
-            rowKeys.forEach(r => {
-                const rTotalVal = getMetricVal(rowTotals[r]);
+            // CASE 1: FLAT 1D TABLE (colDimKey === 'none')
+            if (isFlatMode) {
                 html += `
-                    <tr class="hover:bg-slate-800/40 transition-colors">
-                        <td class="py-2.5 px-3 font-semibold text-slate-200 sticky left-0 bg-slate-950/90 border-r border-slate-800 whitespace-nowrap font-sans">
-                            ${r}
+                    <thead>
+                        <tr class="bg-slate-900 border-b border-slate-800 text-[11px] text-slate-400">
+                            <th class="py-3 px-3 font-bold text-slate-200 sticky left-0 bg-slate-900 z-10 border-r border-slate-800">
+                                ${rowDim.name}
+                            </th>
+                            ${olapSelectedMetrics.map(m => `
+                                <th class="py-3 px-3 text-right font-bold whitespace-nowrap text-cyan-300 border-l border-slate-800/80">
+                                    ${OLAP_METRIC_CONFIG[m].name} (${OLAP_METRIC_CONFIG[m].unit})
+                                </th>
+                            `).join('')}
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/60 font-mono text-xs">
+                `;
+
+                rowKeys.forEach(r => {
+                    html += `
+                        <tr class="hover:bg-slate-800/40 transition-colors">
+                            <td class="py-2.5 px-3 font-semibold text-slate-200 sticky left-0 bg-slate-950/90 border-r border-slate-800 whitespace-nowrap font-sans">
+                                ${r}
+                            </td>
+                            ${olapSelectedMetrics.map(m => {
+                                const v = getMetricVal(m, rowTotals[r], r, null);
+                                return `<td class="py-2.5 px-3 text-right border-l border-slate-800/50 whitespace-nowrap">${formatCell(m, v, r, null, rowTotals[r])}</td>`;
+                            }).join('')}
+                        </tr>
+                    `;
+                });
+
+                // Total Row
+                html += `
+                    <tr class="bg-slate-900/90 font-bold border-t-2 border-slate-700 text-slate-100">
+                        <td class="py-3 px-3 font-black sticky left-0 bg-slate-900 border-r border-slate-800 font-sans text-cyan-400">
+                            TỔNG CỘNG
+                        </td>
+                        ${olapSelectedMetrics.map(m => {
+                            const v = getMetricVal(m, grandTotal, null, null);
+                            return `<td class="py-3 px-3 text-right font-black border-l border-slate-700 text-emerald-400 whitespace-nowrap text-sm">${formatCell(m, v, null, null, grandTotal)}</td>`;
+                        }).join('')}
+                    </tr>
+                    </tbody>
+                `;
+            } 
+            // CASE 2: SINGLE METRIC 2D MATRIX
+            else if (olapSelectedMetrics.length === 1) {
+                const singleMetric = olapSelectedMetrics[0];
+                html += `
+                    <thead>
+                        <tr class="bg-slate-900 border-b border-slate-800 text-[11px] text-slate-400">
+                            <th class="py-3 px-3 font-bold text-slate-200 sticky left-0 bg-slate-900 z-10 border-r border-slate-800">
+                                ${rowDim.name} \ ${colDim.name} (${OLAP_METRIC_CONFIG[singleMetric].name})
+                            </th>
+                            ${colKeys.map(c => `<th class="py-3 px-3 text-right font-semibold whitespace-nowrap">${c}</th>`).join('')}
+                            <th class="py-3 px-3 text-right font-black text-cyan-400 bg-slate-900/90 border-l border-slate-800">TỔNG CỘNG</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/60 font-mono text-xs">
+                `;
+
+                rowKeys.forEach(r => {
+                    const rTotalVal = getMetricVal(singleMetric, rowTotals[r], r, null);
+                    html += `
+                        <tr class="hover:bg-slate-800/40 transition-colors">
+                            <td class="py-2.5 px-3 font-semibold text-slate-200 sticky left-0 bg-slate-950/90 border-r border-slate-800 whitespace-nowrap font-sans">
+                                ${r}
+                            </td>
+                            ${colKeys.map(c => {
+                                const v = getMetricVal(singleMetric, matrix[r]?.[c], r, c);
+                                return `<td class="py-2.5 px-3 text-right whitespace-nowrap">${formatCell(singleMetric, v, r, c, matrix[r]?.[c])}</td>`;
+                            }).join('')}
+                            <td class="py-2.5 px-3 text-right font-black text-cyan-300 bg-slate-900/50 border-l border-slate-800 whitespace-nowrap">
+                                ${formatCell(singleMetric, rTotalVal, r, null, rowTotals[r])}
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                const gTotalVal = getMetricVal(singleMetric, grandTotal, null, null);
+                html += `
+                    <tr class="bg-slate-900/90 font-bold border-t-2 border-slate-700 text-slate-100">
+                        <td class="py-3 px-3 font-black sticky left-0 bg-slate-900 border-r border-slate-800 font-sans text-cyan-400">
+                            TỔNG CỘNG
                         </td>
                         ${colKeys.map(c => {
-                            const v = getMetricVal(matrix[r]?.[c]);
-                            const bg = getHeatmapBg(v);
-                            return `<td class="py-2.5 px-3 text-right ${bg} whitespace-nowrap">${formatCell(v, r, c, matrix[r]?.[c])}</td>`;
+                            const v = getMetricVal(singleMetric, colTotals[c], null, c);
+                            return `<td class="py-3 px-3 text-right text-cyan-300 whitespace-nowrap">${formatCell(singleMetric, v, null, c, colTotals[c])}</td>`;
                         }).join('')}
-                        <td class="py-2.5 px-3 text-right font-black text-cyan-300 bg-slate-900/50 border-l border-slate-800 whitespace-nowrap">
-                            ${formatCell(rTotalVal, r, null, rowTotals[r])}
+                        <td class="py-3 px-3 text-right font-black text-emerald-400 bg-slate-900 border-l border-slate-800 whitespace-nowrap text-sm">
+                            ${formatCell(singleMetric, gTotalVal, null, null, grandTotal)}
                         </td>
                     </tr>
+                    </tbody>
                 `;
-            });
+            }
+            // CASE 3: MULTI-METRIC 2D MATRIX (Sub-columns)
+            else {
+                const metricCount = olapSelectedMetrics.length;
+                html += `
+                    <thead>
+                        <tr class="bg-slate-900 border-b border-slate-800 text-[11px] text-slate-400">
+                            <th rowspan="2" class="py-3 px-3 font-bold text-slate-200 sticky left-0 bg-slate-900 z-10 border-r border-slate-800 align-middle">
+                                ${rowDim.name} \ ${colDim.name}
+                            </th>
+                            ${colKeys.map(c => `
+                                <th colspan="${metricCount}" class="py-2 px-3 text-center font-bold text-slate-200 border-l border-slate-800 bg-slate-900/90 whitespace-nowrap">
+                                    ${c}
+                                </th>
+                            `).join('')}
+                            <th colspan="${metricCount}" class="py-2 px-3 text-center font-black text-cyan-400 border-l-2 border-slate-700 bg-slate-900 whitespace-nowrap">
+                                TỔNG CỘNG
+                            </th>
+                        </tr>
+                        <tr class="bg-slate-900/95 border-b border-slate-800 text-[10px] text-slate-400">
+                            ${colKeys.map(c => olapSelectedMetrics.map(m => `
+                                <th class="py-1.5 px-2 text-right font-semibold text-slate-400 border-l border-slate-800/60 whitespace-nowrap ${OLAP_METRIC_CONFIG[m].color}">
+                                    ${OLAP_METRIC_CONFIG[m].name}
+                                </th>
+                            `).join('')).join('')}
+                            ${olapSelectedMetrics.map(m => `
+                                <th class="py-1.5 px-2 text-right font-bold text-cyan-300 border-l border-slate-800/80 whitespace-nowrap">
+                                    ${OLAP_METRIC_CONFIG[m].name}
+                                </th>
+                            `).join('')}
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/60 font-mono text-xs">
+                `;
 
-            const gTotalVal = getMetricVal(grandTotal);
-            html += `
-                <tr class="bg-slate-900/90 font-bold border-t-2 border-slate-700 text-slate-100">
-                    <td class="py-3 px-3 font-black sticky left-0 bg-slate-900 border-r border-slate-800 font-sans text-cyan-400">
-                        TỔNG CỘNG
-                    </td>
-                    ${colKeys.map(c => {
-                        const v = getMetricVal(colTotals[c]);
-                        return `<td class="py-3 px-3 text-right text-cyan-300 whitespace-nowrap">${formatCell(v, null, c, colTotals[c])}</td>`;
-                    }).join('')}
-                    <td class="py-3 px-3 text-right font-black text-emerald-400 bg-slate-900 border-l border-slate-800 whitespace-nowrap text-sm">
-                        ${formatCell(gTotalVal, null, null, grandTotal)}
-                    </td>
-                </tr>
-                </tbody>
-            `;
+                rowKeys.forEach(r => {
+                    html += `
+                        <tr class="hover:bg-slate-800/40 transition-colors">
+                            <td class="py-2.5 px-3 font-semibold text-slate-200 sticky left-0 bg-slate-950/90 border-r border-slate-800 whitespace-nowrap font-sans">
+                                ${r}
+                            </td>
+                            ${colKeys.map(c => olapSelectedMetrics.map(m => {
+                                const v = getMetricVal(m, matrix[r]?.[c], r, c);
+                                return `<td class="py-2 px-2 text-right border-l border-slate-800/40 whitespace-nowrap">${formatCell(m, v, r, c, matrix[r]?.[c])}</td>`;
+                            }).join('')).join('')}
+                            ${olapSelectedMetrics.map(m => {
+                                const rTotalVal = getMetricVal(m, rowTotals[r], r, null);
+                                return `<td class="py-2 px-2 text-right border-l border-slate-800 bg-slate-900/40 font-bold whitespace-nowrap">${formatCell(m, rTotalVal, r, null, rowTotals[r])}</td>`;
+                            }).join('')}
+                        </tr>
+                    `;
+                });
+
+                // Total Row
+                html += `
+                    <tr class="bg-slate-900/90 font-bold border-t-2 border-slate-700 text-slate-100">
+                        <td class="py-3 px-3 font-black sticky left-0 bg-slate-900 border-r border-slate-800 font-sans text-cyan-400">
+                            TỔNG CỘNG
+                        </td>
+                        ${colKeys.map(c => olapSelectedMetrics.map(m => {
+                            const v = getMetricVal(m, colTotals[c], null, c);
+                            return `<td class="py-3 px-2 text-right border-l border-slate-800 text-cyan-300 font-bold whitespace-nowrap">${formatCell(m, v, null, c, colTotals[c])}</td>`;
+                        }).join('')).join('')}
+                        ${olapSelectedMetrics.map(m => {
+                            const gTotalVal = getMetricVal(m, grandTotal, null, null);
+                            return `<td class="py-3 px-2 text-right border-l border-slate-700 text-emerald-400 font-black whitespace-nowrap text-sm">${formatCell(m, gTotalVal, null, null, grandTotal)}</td>`;
+                        }).join('')}
+                    </tr>
+                    </tbody>
+                `;
+            }
 
             table.innerHTML = html;
 
             const statsEl = document.getElementById('olapMatrixStats');
             if (statsEl) {
-                statsEl.innerText = `Hiển thị ${rowKeys.length} hàng × ${colKeys.length} cột (Kỳ lọc: ${olapMonthFrom} → ${olapMonthTo})`;
+                const metricLabels = olapSelectedMetrics.map(m => OLAP_METRIC_CONFIG[m].name).join(' + ');
+                statsEl.innerText = isFlatMode 
+                    ? `Hiển thị ${rowKeys.length} hàng × ${olapSelectedMetrics.length} chỉ số (${metricLabels}) (Kỳ lọc: ${olapMonthFrom} → ${olapMonthTo})`
+                    : `Hiển thị ${rowKeys.length} hàng × ${colKeys.length} cột × ${olapSelectedMetrics.length} chỉ số (Kỳ lọc: ${olapMonthFrom} → ${olapMonthTo})`;
             }
         }
 
@@ -4268,7 +4648,13 @@
                 });
             }
 
-            const getMetricVal = (obj) => {
+            const getMetricVal = (obj, key) => {
+                if (factMetric === 'cost') return calcOlapCellCost(rowDimKey, key, 'none', 'all', (lookups.m || []).filter(m => m >= olapMonthFrom && m <= olapMonthTo)) || 0;
+                if (factMetric === 'cpl') {
+                    const c = calcOlapCellCost(rowDimKey, key, 'none', 'all', (lookups.m || []).filter(m => m >= olapMonthFrom && m <= olapMonthTo));
+                    const l = obj ? obj.leads : 0;
+                    return (c && l > 0) ? Math.round(c / l) : 0;
+                }
                 if (!obj) return 0;
                 if (factMetric === 'rev') return obj.rev;
                 if (factMetric === 'deal') return obj.validDeals || 0;
@@ -7529,7 +7915,7 @@
             if (window.lucide) lucide.createIcons();
         }
 
-        const CURRENT_APP_BUILD = "v2026.11.05.v10.2";
+        const CURRENT_APP_BUILD = "v2026.11.05.v10.3";
 
         function forceClearCacheAndReload() {
             try {
